@@ -4,11 +4,12 @@ Maak in één klik tientallen varianten van een ontwerp (social posts, stories, 
 
 ## Installeren (development plugin)
 
-1. `npm run build` (maakt `dist/`; alleen nodig na wijzigingen in `src/`).
+1. Download of clone deze repository: `git clone https://github.com/dieterdeweirdt/FigmaBulkCreator.git`
+   (of via GitHub: **Code → Download ZIP**). De gebouwde plugin zit al in `dist/`, Node is dus niet nodig.
 2. Figma desktop → **Plugins → Development → Import plugin from manifest…** → kies `manifest.json`.
 3. Start via **Plugins → Development → Bulk Creator**.
 
-`npm run watch` bouwt automatisch opnieuw bij elke wijziging in `src/`.
+Pas je zelf iets aan in `src/`, voer dan `npm run build` uit (Node vereist). `npm run watch` bouwt automatisch opnieuw bij elke wijziging in `src/`.
 `npm run example` maakt `examples/voorbeeld-campagne.xlsx` om mee te testen.
 
 ## Werkwijze
