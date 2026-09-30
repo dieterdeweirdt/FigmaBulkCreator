@@ -190,7 +190,7 @@ function collectLayers(root) {
     const isRoot = node === root;
     const hidden = !node.visible;
     if (node.type === 'TEXT') {
-      out.push({ id: node.id, name: node.name, kind: 'text', trail, sample: node.characters.slice(0, 60), hidden });
+      out.push({ id: node.id, name: node.name, kind: 'text', trail, sample: node.characters.slice(0, 60), hidden, tokens: placeholderTokens(node.characters) });
     } else if ('fills' in node && node.fills !== figma.mixed) {
       const hasImage = node.fills.some((p) => p.type === 'IMAGE');
       if (isRoot || hasImage || SHAPE_TYPES.includes(node.type) || IMAGE_HINT.test(node.name)) {
@@ -293,6 +293,7 @@ async function handlePick() {
       kind: layerKind(layer),
       trail: '',
       sample: layer.type === 'TEXT' ? layer.characters.slice(0, 60) : undefined,
+      tokens: layer.type === 'TEXT' ? placeholderTokens(layer.characters) : [],
       hasImage: layer.type !== 'TEXT' && layer.fills.some((f) => f.type === 'IMAGE'),
       root: layer === tpl,
     } : null,
@@ -424,12 +425,109 @@ async function targetIn(variant, tpl, t) {
   return nodeAtPath(variant, t.path);
 }
 
-async function fillVariant(variant, tpl, targets, row, opts, getHash, warn) {
+// ---------------------------------------------------------------------------
+// Placeholders: "Only {{price}} per night" → enkel {{price}} wordt vervangen
+
+const PLACEHOLDER = /\{\{\s*([^{}]+?)\s*\}\}/g;
+const normKey = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9#]/g, '');
+
+function placeholderTokens(text) {
+  const out = [];
+  let m;
+  PLACEHOLDER.lastIndex = 0;
+  while ((m = PLACEHOLDER.exec(text))) if (out.indexOf(m[1]) < 0) out.push(m[1]);
+  return out;
+}
+
+function placeholderValue(token, row, ctx, warn) {
+  const k = normKey(token);
+  if (k === 'nr' || k === 'row' || k === 'rij' || k === '#') return String(ctx.nr);
+  const col = ctx.colByKey[k];
+  if (!col) {
+    warn('Placeholder {{' + token + '}} does not match any column');
+    return '{{' + token + '}}';
+  }
+  const v = row.values[col];
+  return v == null ? '' : String(v).replace(/\r\n?/g, '\n');
+}
+
+const STYLE_FIELDS = ['fontName', 'fontSize', 'fills', 'textDecoration', 'textCase', 'letterSpacing', 'lineHeight', 'textStyleId'];
+
+/** Vult de placeholders in op basis van de tekst in de template, zodat ook een update opnieuw vertrekt van {{…}}. */
+async function setTemplatedText(node, src, row, ctx, warn) {
+  if (node.type !== 'TEXT' || src.type !== 'TEXT') return;
+  if (node.hasMissingFont || src.hasMissingFont) {
+    warn('Missing font in layer "' + node.name + '"');
+    return;
+  }
+  const full = src.characters;
+  const segs = src.getStyledTextSegments(STYLE_FIELDS);
+  const pieces = [];
+  const pushRange = (a, b) => segs.forEach((g) => {
+    const s = Math.max(a, g.start);
+    const e = Math.min(b, g.end);
+    if (e > s) pieces.push({ text: full.slice(s, e), seg: g });
+  });
+  const segAt = (i) => segs.find((g) => i >= g.start && i < g.end) || segs[0];
+  let pos = 0;
+  let m;
+  PLACEHOLDER.lastIndex = 0;
+  while ((m = PLACEHOLDER.exec(full))) {
+    pushRange(pos, m.index);
+    pieces.push({ text: placeholderValue(m[1], row, ctx, warn), seg: segAt(m.index) });
+    pos = m.index + m[0].length;
+  }
+  pushRange(pos, full.length);
+
+  await loadFonts(node);
+  for (const g of segs) {
+    const k = g.fontName.family + '|' + g.fontName.style;
+    if (!loadedFonts.has(k)) {
+      await figma.loadFontAsync(g.fontName);
+      loadedFonts.add(k);
+    }
+  }
+  const text = pieces.map((p) => p.text).join('');
+  if (node.characters !== text) node.characters = text;
+  // Eén stijl: niets extra instellen, zodat stijlwijzigingen in de template blijven doorstromen
+  if (segs.length < 2 || !text.length) return;
+  let at = 0;
+  for (const p of pieces) {
+    const a = at;
+    const b = at + p.text.length;
+    at = b;
+    if (b <= a) continue;
+    const g = p.seg;
+    try {
+      node.setRangeFills(a, b, g.fills);
+      // Een tekststijl bevat font, grootte, … zelf; die apart instellen zou de stijl loskoppelen
+      if (g.textStyleId) {
+        await node.setRangeTextStyleIdAsync(a, b, g.textStyleId);
+        continue;
+      }
+      node.setRangeFontName(a, b, g.fontName);
+      node.setRangeFontSize(a, b, g.fontSize);
+      node.setRangeTextDecoration(a, b, g.textDecoration);
+      node.setRangeTextCase(a, b, g.textCase);
+      node.setRangeLetterSpacing(a, b, g.letterSpacing);
+      node.setRangeLineHeight(a, b, g.lineHeight);
+    } catch (e) {
+      warn('Could not keep all text styling in layer "' + node.name + '"');
+    }
+  }
+}
+
+async function fillVariant(variant, tpl, targets, row, opts, getHash, warn, ctx) {
   for (const t of targets) {
     const raw = row.values[t.col];
     const node = await targetIn(variant, tpl, t);
     if (!node) {
-      warn('Layer for column "' + t.col + '" not found in a variant');
+      warn('Layer ' + (t.col ? 'for column "' + t.col + '" ' : '') + 'not found in a variant');
+      continue;
+    }
+    if (t.kind === 'placeholder') {
+      const src = await getNode(t.id);
+      if (src) await setTemplatedText(node, src, row, ctx, warn);
       continue;
     }
     const empty = raw == null || String(raw).trim() === '';
@@ -530,6 +628,8 @@ async function generate(msg) {
   const warnings = new Map();
   const warn = (text) => warnings.set(text, (warnings.get(text) || 0) + 1);
   const colType = {};
+  const colByKey = {};
+  columns.forEach((c) => (colByKey[normKey(c.name)] = c.name));
   columns.forEach((c) => (colType[c.name] = c.type));
 
   const hashCache = new Map();
@@ -607,6 +707,14 @@ async function generate(msg) {
       const n = nodeAtPath(tpl, t.path);
       t.id = n ? n.id : null;
     }
+    // Tekstlagen met {{placeholders}} worden altijd vanuit de template ingevuld
+    const phNodes = tpl.type === 'TEXT' ? [] : tpl.findAll((n) => n.type === 'TEXT' && placeholderTokens(n.characters).length > 0);
+    const phIds = new Set(phNodes.map((n) => n.id));
+    for (let k = targets.length - 1; k >= 0; k--) if (phIds.has(targets[k].id)) targets.splice(k, 1);
+    phNodes.forEach((n) => {
+      const path = pathFrom(tpl, n);
+      if (path) targets.push({ col: null, path, id: n.id, kind: 'placeholder' });
+    });
 
     const dsId = spec.datasetId;
     const ownerIds = [oldId, tpl.id];
@@ -682,7 +790,7 @@ async function generate(msg) {
         v.setPluginData(KEY.order, String(i));
         v.setPluginData(KEY.excelRow, String(row.excelRow || ''));
         v.name = makeName(options.namePattern || '{{template}} {{nr}}', tpl.name, row, i + 1);
-        await fillVariant(v, tpl, targets, row, options, getHash, warn);
+        await fillVariant(v, tpl, targets, row, options, getHash, warn, { colByKey, nr: i + 1 });
       }
       done++;
       if (done % 5 === 0 || done === total) {
@@ -715,7 +823,7 @@ async function generate(msg) {
     const ds = readDatasets(tpl);
     const mapping = {};
     targets.forEach((t) => {
-      if (t.id) mapping[t.col] = (mapping[t.col] || []).concat(t.id);
+      if (t.id && t.col) mapping[t.col] = (mapping[t.col] || []).concat(t.id);
     });
     ds[dsId] = {
       id: dsId,

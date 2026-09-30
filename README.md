@@ -42,9 +42,25 @@ Images can be:
 
 A column is linked to a layer when:
 - the layer name equals the column name (`title`, `#title`, `Title` — case and symbols don't matter),
-- the text in the layer contains a placeholder (`{{title}}`, `{title}`, `[title]`),
 - they are synonyms (title/headline/titel, price/prijs, cta/button/knop, photo/image/foto, …; English and Dutch),
 - there is a single image column: the plugin then picks the largest layer with an image that isn't a logo or icon.
+
+### Placeholders inside text
+
+Type `{{column name}}` inside a text layer to replace **only that part** of the text — no linking needed:
+
+| Text in the template        | Result                    |
+|-----------------------------|---------------------------|
+| `Only {{price}} per night`  | Only € 49 per night       |
+| `{{author}}, {{date}}`      | Steve Jobs, 2005          |
+| `Quote {{nr}}`              | Quote 3 (row number)      |
+
+- Case and spaces don't matter (`{{ Price }}` works too).
+- Styling is kept: if `{{price}}` is bold in a regular sentence, the price will be bold.
+- Placeholders are always filled from the template, so updating with a new Excel file works as well.
+- A placeholder that doesn't match a column stays as-is; the plugin warns you about it.
+
+### Multiple layers per column
 
 One column can fill **several layers**: add an extra layer via **+ layer** (or ◎). Handy to use a profile picture
 both as an avatar and as a blurred background — just put a *Layer blur* on that layer in the template.

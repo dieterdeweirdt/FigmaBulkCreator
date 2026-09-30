@@ -160,6 +160,8 @@
     border: 1px solid var(--border); border-radius: 5px; background: var(--bg2);
   }
   .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.ph { background: var(--brand-soft); border-color: transparent; color: var(--brand-text); padding-right: 7px; }
+  .chip.ph code { font: 600 10px/1 ui-monospace, Menlo, monospace; }
   .chip button { border: 0; background: transparent; color: var(--text3); cursor: pointer; padding: 2px 3px; border-radius: 3px; display: grid; place-items: center; }
   .chip button:hover { background: var(--hover); color: var(--text); }
   .maprow select {
@@ -511,6 +513,22 @@ function unlinkLayer(tplId, col, layerId) {
   if (!map[col].length) { delete map[col]; delete S.mapSource[tplId][col]; }
 }
 
+// Tekstlagen met {{kolom}} worden altijd automatisch ingevuld (zie code.js)
+const SPECIAL_TOKENS = ['nr', 'row', 'rij', '#'];
+const tokenKey = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9#]/g, '');
+const hasTokens = (l) => l.kind === 'text' && l.tokens && l.tokens.length > 0;
+const placeholderLayers = (tpl, col) => tpl.layers.filter((l) => hasTokens(l) && l.tokens.some((t) => tokenKey(t) === tokenKey(col)));
+
+function unknownTokens(tpl) {
+  const cols = new Set((S.data ? S.data.columns : []).map((c) => tokenKey(c.name)));
+  const out = [];
+  tpl.layers.filter(hasTokens).forEach((l) => l.tokens.forEach((t) => {
+    const k = tokenKey(t);
+    if (!cols.has(k) && !SPECIAL_TOKENS.includes(k)) out.push({ token: t, layer: l.name });
+  }));
+  return out;
+}
+
 function autoMap(tpl, onlyCols) {
   const cols = S.data.columns.filter((c) => !onlyCols || onlyCols.includes(c.name));
   const map = S.mapping[tpl.id] || (S.mapping[tpl.id] = {});
@@ -521,7 +539,7 @@ function autoMap(tpl, onlyCols) {
 
   const pairs = [];
   cols.forEach((c) => tpl.layers.forEach((l) => {
-    if (l.kind !== c.type || taken.has(l.id)) return;
+    if (l.kind !== c.type || taken.has(l.id) || hasTokens(l)) return;
     let s = scoreMatch(c, l);
     if (s && l.hidden) s -= 5;
     if (s) pairs.push({ c, l, s });
@@ -549,7 +567,8 @@ function autoMap(tpl, onlyCols) {
 
 function mappedCount(tplId) {
   const m = S.mapping[tplId] || {};
-  return S.data ? S.data.columns.filter((c) => m[c.name] && m[c.name].length).length : 0;
+  const tpl = S.templates.find((t) => t.id === tplId);
+  return S.data ? S.data.columns.filter((c) => (m[c.name] && m[c.name].length) || (tpl && placeholderLayers(tpl, c.name).length)).length : 0;
 }
 
 // ===========================================================================
@@ -1131,10 +1150,12 @@ function renderMapping() {
   html += cols.map((c) => {
     const layers = tpl.layers.filter((l) => l.kind === c.type);
     const curList = linked(tpl.id, c.name);
+    const phList = placeholderLayers(tpl, c.name);
     const cur = curList.length > 0;
     const picking = S.pick && S.pick.tplId === tpl.id && S.pick.col === c.name;
-    const badge = cur ? `<span class="badge ${src[c.name] || 'manual'}">${{ auto: 'auto', saved: 'saved', manual: 'manual' }[src[c.name] || 'manual']}</span>` : '<span class="badge none">—</span>';
-    const opts = layers.filter((l) => !curList.includes(l.id)).map((l) => {
+    const srcKey = src[c.name] || (cur ? 'manual' : 'auto');
+    const badge = cur || phList.length ? `<span class="badge ${srcKey}">${{ auto: 'auto', saved: 'saved', manual: 'manual' }[srcKey]}</span>` : '<span class="badge none">—</span>';
+    const opts = layers.filter((l) => !curList.includes(l.id) && !hasTokens(l)).map((l) => {
       let label = layerLabel(l);
       if (l.kind === 'text' && l.sample && norm(l.sample) !== norm(l.name)) label += ' — “' + l.sample.slice(0, 24) + (l.sample.length > 24 ? '…' : '') + '”';
       if (l.trail) label += '  ·  ' + l.trail;
@@ -1142,14 +1163,15 @@ function renderMapping() {
       if (usedBy[l.id] && usedBy[l.id] !== c.name) label = '✓ ' + label;
       return `<option value="${l.id}">${esc(label)}</option>`;
     }).join('');
-    const chips = curList.map((id) => {
+    const phChips = phList.map((l) => `<span class="chip ph" title="Placeholder in this text layer — filled in automatically"><code>{{ }}</code><span>${esc(l.name)}</span></span>`).join('');
+    const chips = phChips + curList.map((id) => {
       const l = tpl.layers.find((x) => x.id === id);
       if (!l) return '';
       return `<span class="chip" title="${esc(l.trail ? l.trail + ' › ' + l.name : l.name)}"><span>${esc(layerLabel(l))}</span>
         <button data-act="unlink" data-col="${esc(c.name)}" data-id="${id}" title="Unlink">${ICON.close}</button></span>`;
     }).join('');
-    const placeholder = cur ? '+ layer' : layers.length ? 'Don’t link' : 'No ' + (c.type === 'image' ? 'image' : 'text') + ' layers found';
-    const select = cur && !opts ? '' : `<select data-act="map-add" data-col="${esc(c.name)}" class="${cur ? 'add' : 'unmapped'}" title="${cur ? 'Also use this column in another layer' : ''}">
+    const placeholder = cur || phList.length ? '+ layer' : layers.length ? 'Don’t link' : 'No ' + (c.type === 'image' ? 'image' : 'text') + ' layers found';
+    const select = (cur || phList.length) && !opts ? '' : `<select data-act="map-add" data-col="${esc(c.name)}" class="${cur || phList.length ? 'add' : 'unmapped'}" title="${cur || phList.length ? 'Also use this column in another layer' : ''}">
         <option value="">${placeholder}</option>${opts}</select>`;
     return `<div class="maprow ${picking ? 'picking' : ''}">
       <div class="colname">
@@ -1165,9 +1187,14 @@ function renderMapping() {
 
   const n = mappedCount(tpl.id);
   const unmapped = cols.length - n;
+  const unknown = unknownTokens(tpl);
+  if (unknown.length) {
+    html += `<div class="banner warn" style="margin-top:8px"><span>${unknown.slice(0, 4).map((u) => `<b>{{${esc(u.token)}}}</b> in “${esc(u.layer)}”`).join(', ')}
+      ${unknown.length === 1 ? 'does' : 'do'} not match any column and will stay as-is.</span></div>`;
+  }
   html += `<div class="hint">${ICON.info}<span>${unmapped
     ? `${plural(unmapped, 'column is', 'columns are')} not used for <b>${esc(tpl.name)}</b>. Choose a layer, or click ◎ and select the layer on the canvas.`
-    : 'All columns are linked.'} A column can fill several layers via <i>+ layer</i> (e.g. a photo as avatar and as background). Tip: give layers the same name as the column (e.g. <i>title</i>) to link them automatically.</span></div>`;
+    : 'All columns are linked.'} A column can fill several layers via <i>+ layer</i> (e.g. a photo as avatar and as background). Tip: give layers the same name as the column (e.g. <i>title</i>) to link them automatically, or type <i>{{title}}</i> inside a text layer to replace only that part of the text.</span></div>`;
 
   body.innerHTML = html;
   const total = S.templates.reduce((a, t) => a + mappedCount(t.id), 0);
@@ -1337,6 +1364,11 @@ function onPicked(msg) {
   const col = S.data.columns.find((c) => c.name === msg.column);
   if (!tpl || !col) return;
   if (!tpl.layers.find((l) => l.id === msg.layer.id)) tpl.layers.push(msg.layer);
+  if (hasTokens(msg.layer)) {
+    toast('"' + msg.layer.name + '" contains placeholders — it is filled in automatically.');
+    renderMapping();
+    return;
+  }
   if (msg.layer.kind !== col.type) {
     if (msg.layer.kind === 'text') { toast('That is a text layer — "' + col.name + '" is an image column.', true); renderMapping(); return; }
     // Een vorm aanklikken voor een tekstkolom → kolom wordt beeldkolom
