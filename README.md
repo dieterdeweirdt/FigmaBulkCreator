@@ -20,7 +20,8 @@ If you change anything in `src/`, run `npm run build` (requires Node). `npm run 
    Optionally pick another sheet and uncheck the rows you don't want.
 3. **Link** — columns are linked to layers automatically. If that doesn't work, choose the layer from the list
    or click ◎ and click the layer on the canvas. Click the icon in front of a column to switch between text and image.
-4. **Images** — only appears when the Excel file refers to file names: drop the folder with your photos there.
+4. **Images** — images placed in the Excel file itself or linked via a URL are picked up automatically.
+   Only when the Excel file contains file names (e.g. `citywalk.jpg`) does this step appear: drop the folder with your photos there.
 5. **Generate** (or `⌘/Ctrl + Enter`).
 
 ## What the Excel file can look like
@@ -32,8 +33,10 @@ If you change anything in `src/`, run `npm run build` (requires Node). `npm run 
 
 Images can be:
 - a **URL** (the server must allow external access; Dropbox links are converted automatically),
-- a **file name** (`citywalk.jpg` or `photos/citywalk.jpg`) — you add the photos in step 4,
-- an **image inside the Excel file**: via *Insert → Picture → Place in Cell*, or a floating picture on the cell.
+- an **image inside the Excel file** — the easiest option, nothing else to add:
+  *Insert → Insert Picture → Place in Cell → Picture from File…*. A picture floating on top of a cell works too
+  (it belongs to the cell under its top-left corner).
+- a **file name** (`citywalk.jpg` or `photos/citywalk.jpg`) — you add the photos in step 4.
 
 ## Automatic linking
 
