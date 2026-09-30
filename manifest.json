@@ -1,0 +1,13 @@
+{
+  "name": "Bulk Creator",
+  "id": "bulk-creator-artevelde",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["*"],
+    "reasoning": "Afbeeldingen worden opgehaald via de URL's die in de Excel staan."
+  }
+}

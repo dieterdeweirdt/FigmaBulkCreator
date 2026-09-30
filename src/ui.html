@@ -1,0 +1,1632 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Bulk Creator</title>
+<style>
+  :root {
+    --bg: var(--figma-color-bg, #fff);
+    --bg2: var(--figma-color-bg-secondary, #f5f5f5);
+    --bg3: var(--figma-color-bg-tertiary, #e6e6e6);
+    --hover: var(--figma-color-bg-hover, #f0f0f0);
+    --text: var(--figma-color-text, #1e1e1e);
+    --text2: var(--figma-color-text-secondary, #666);
+    --text3: var(--figma-color-text-tertiary, #999);
+    --border: var(--figma-color-border, #e6e6e6);
+    --brand: var(--figma-color-bg-brand, #0d99ff);
+    --brand-text: var(--figma-color-text-brand, #007be5);
+    --brand-soft: var(--figma-color-bg-brand-tertiary, #e5f4ff);
+    --onbrand: var(--figma-color-text-onbrand, #fff);
+    --success: var(--figma-color-text-success, #14ae5c);
+    --success-soft: var(--figma-color-bg-success-tertiary, #dcf5e7);
+    --warning: var(--figma-color-text-warning, #b86200);
+    --warning-soft: var(--figma-color-bg-warning-tertiary, #fff1db);
+    --danger: var(--figma-color-text-danger, #dc3412);
+    --danger-soft: var(--figma-color-bg-danger-tertiary, #ffe2e0);
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font: 11px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text); background: var(--bg);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  .hidden { display: none !important; }
+  .muted { color: var(--text2); }
+  .faint { color: var(--text3); }
+
+  /* Layout */
+  #main { flex: 1; overflow-y: auto; padding: 4px 0 16px; }
+  .step { border-bottom: 1px solid var(--border); padding: 12px 16px 14px; }
+  .step-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .step-num {
+    width: 18px; height: 18px; border-radius: 50%; flex: none;
+    display: grid; place-items: center; font-size: 10px; font-weight: 600;
+    background: var(--bg3); color: var(--text2);
+  }
+  .step.done .step-num { background: var(--success); color: #fff; }
+  .step.active .step-num { background: var(--brand); color: var(--onbrand); }
+  .step-title { font-weight: 600; font-size: 12px; flex: 1; }
+  .step-meta { color: var(--text2); }
+  .step.disabled > *:not(.step-head) { opacity: .45; pointer-events: none; }
+
+  /* Buttons */
+  .btn {
+    border: 1px solid var(--border); background: var(--bg); border-radius: var(--radius);
+    padding: 5px 10px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { background: var(--hover); }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: var(--onbrand); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn.primary:disabled { opacity: .4; cursor: default; filter: none; }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--brand-text); padding: 3px 6px; }
+  .btn.ghost:hover { background: var(--brand-soft); }
+  .btn.small { padding: 2px 7px; font-size: 10px; }
+  .icon-btn {
+    width: 26px; height: 26px; border-radius: var(--radius); border: 1px solid transparent;
+    background: transparent; cursor: pointer; display: grid; place-items: center; color: var(--text2); flex: none;
+  }
+  .icon-btn:hover { background: var(--hover); color: var(--text); }
+  .icon-btn.on { background: var(--brand-soft); color: var(--brand-text); border-color: var(--brand); }
+  svg { display: block; }
+
+  /* Templates */
+  .empty {
+    border: 1px dashed var(--border); border-radius: 8px; padding: 18px; text-align: center; color: var(--text2);
+  }
+  .empty strong { color: var(--text); display: block; margin-bottom: 2px; }
+  .tpl { display: flex; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+  .tpl-thumb {
+    width: 44px; height: 44px; border-radius: 4px; background: var(--bg2); flex: none;
+    display: grid; place-items: center; overflow: hidden;
+  }
+  .tpl-thumb img { max-width: 100%; max-height: 100%; }
+  .tpl-body { flex: 1; min-width: 0; }
+  .tpl-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tpl-sub { color: var(--text2); }
+  .tpl-sets { margin: -2px 0 8px 54px; }
+  .set-row { display: flex; align-items: center; gap: 6px; color: var(--text2); padding: 2px 0; }
+  .set-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 10px;
+    background: var(--bg2); color: var(--text2); font-size: 10px; white-space: nowrap;
+  }
+  .pill.comp { background: #f1e9ff; color: #7b3fe4; }
+  .banner {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px;
+    background: var(--brand-soft); color: var(--text); margin-bottom: 8px;
+  }
+  .banner.warn { background: var(--warning-soft); }
+  .banner span { flex: 1; }
+
+  /* Dropzone */
+  .drop {
+    border: 1.5px dashed var(--border); border-radius: 8px; padding: 18px 14px; text-align: center;
+    cursor: pointer; transition: border-color .15s, background .15s; color: var(--text2);
+  }
+  .drop:hover, .drop.over { border-color: var(--brand); background: var(--brand-soft); }
+  .drop strong { color: var(--text); }
+  .drop .drop-icon { margin: 0 auto 6px; color: var(--text3); width: 28px; }
+  .file-card { display: flex; gap: 8px; align-items: center; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
+  .file-card .ficon { width: 30px; height: 30px; border-radius: 6px; background: #e3f6ea; color: #1b7f45; display: grid; place-items: center; font-weight: 700; font-size: 9px; flex: none; }
+  .file-card .fbody { flex: 1; min-width: 0; }
+  .file-card .fname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  select.inline { border: 1px solid var(--border); border-radius: 4px; background: var(--bg); padding: 1px 4px; max-width: 140px; }
+
+  .cols { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 8px; }
+  .col-chip {
+    display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 12px;
+    padding: 2px 8px 2px 4px; cursor: pointer; background: var(--bg);
+  }
+  .col-chip:hover { border-color: var(--brand); }
+  .col-chip .t { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: var(--bg2); }
+  .col-chip.image .t { background: #fdeaf5; color: #c4217d; }
+
+  details.preview > summary { cursor: pointer; color: var(--text2); padding: 4px 0; list-style: none; user-select: none; }
+  details.preview > summary::before { content: '▸ '; }
+  details.preview[open] > summary::before { content: '▾ '; }
+  .table-wrap { max-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 4px; }
+  table { border-collapse: collapse; width: max-content; min-width: 100%; }
+  th, td { padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+  th { position: sticky; top: 0; background: var(--bg2); font-weight: 600; z-index: 1; }
+  td.chk, th.chk { width: 28px; padding-right: 0; }
+  tr.off td:not(.chk) { opacity: .35; }
+  .thumb { width: 26px; height: 26px; object-fit: cover; border-radius: 3px; background: var(--bg2); display: block; }
+  .missing { color: var(--danger); font-size: 10px; }
+
+  /* Mapping */
+  .tabs { display: flex; gap: 2px; margin-bottom: 8px; overflow-x: auto; }
+  .tab {
+    border: 0; background: transparent; padding: 5px 9px; border-radius: 6px; cursor: pointer; color: var(--text2);
+    display: flex; gap: 6px; align-items: center; white-space: nowrap;
+  }
+  .tab:hover { background: var(--hover); }
+  .tab.active { background: var(--bg2); color: var(--text); font-weight: 600; }
+  .tab .count { font-size: 10px; font-weight: 500; }
+  .tab .count.ok { color: var(--success); }
+  .maprow { display: grid; grid-template-columns: minmax(80px, 1fr) 12px minmax(120px, 1.5fr) 26px 42px; gap: 6px; align-items: center; padding: 3px 0; }
+  .maprow .colname { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .maprow .colname b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .maprow { align-items: start; }
+  .maprow > .colname, .maprow > .arrow, .maprow > .badge { margin-top: 4px; }
+  .maprow .arrow { color: var(--text3); }
+  .targets { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+  .targets select { flex: 1 1 120px; min-width: 0; }
+  .targets select.add { flex: none; width: 62px; color: var(--brand-text); border-style: dashed; padding: 3px 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 3px; max-width: 100%; padding: 2px 2px 2px 7px;
+    border: 1px solid var(--border); border-radius: 5px; background: var(--bg2);
+  }
+  .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip button { border: 0; background: transparent; color: var(--text3); cursor: pointer; padding: 2px 3px; border-radius: 3px; display: grid; place-items: center; }
+  .chip button:hover { background: var(--hover); color: var(--text); }
+  .maprow select {
+    width: 100%; border: 1px solid var(--border); border-radius: 5px; padding: 4px 6px; background: var(--bg);
+  }
+  .maprow select.unmapped { color: var(--text3); }
+  .maprow.picking select { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
+  .type-btn {
+    width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg);
+    cursor: pointer; display: grid; place-items: center; flex: none; color: var(--text2);
+  }
+  .type-btn.image { color: #c4217d; border-color: #f3c0dd; background: #fdeaf5; }
+  .badge { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; text-align: center; border-radius: 4px; padding: 2px 0; }
+  .badge.auto { background: var(--success-soft); color: var(--success); }
+  .badge.saved { background: var(--brand-soft); color: var(--brand-text); }
+  .badge.manual { background: var(--bg2); color: var(--text2); }
+  .badge.none { color: var(--text3); }
+  .hint { margin-top: 8px; color: var(--text2); display: flex; gap: 6px; }
+  .hint svg { flex: none; margin-top: 1px; color: var(--text3); }
+
+  /* Afbeeldingen */
+  .imgstat { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--success); transition: width .2s; }
+  .missing-list { margin-top: 6px; color: var(--text2); }
+  .missing-list code { background: var(--bg2); padding: 0 4px; border-radius: 3px; font-size: 10px; }
+
+  /* Opties */
+  details.options > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
+  details.options > summary .chev { transition: transform .15s; color: var(--text3); }
+  details.options[open] > summary .chev { transform: rotate(90deg); }
+  .opt { display: grid; grid-template-columns: 130px 1fr; gap: 8px; align-items: center; margin-top: 8px; }
+  .opt label { color: var(--text2); }
+  .opt input[type=number], .opt input[type=text], .opt select {
+    border: 1px solid var(--border); border-radius: 5px; padding: 4px 6px; background: var(--bg); width: 100%;
+  }
+  .opt .unit { display: flex; align-items: center; gap: 6px; }
+  .opt .unit input { width: 70px; }
+  .check { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; cursor: pointer; }
+  .check input { margin: 1px 0 0; }
+  .check small { display: block; color: var(--text2); }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 10px 16px 12px; background: var(--bg); }
+  .summary { color: var(--text2); margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
+  .summary b { color: var(--text); }
+  #generate { width: 100%; padding: 8px; font-size: 12px; }
+  .progress { height: 4px; border-radius: 2px; background: var(--bg3); overflow: hidden; margin-bottom: 8px; }
+  .progress > div { height: 100%; background: var(--brand); width: 0; transition: width .15s; }
+  .result { border-radius: 8px; padding: 10px; margin-bottom: 8px; background: var(--success-soft); }
+  .result.has-warn { background: var(--warning-soft); }
+  .result-head { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .result-head .rtext { flex: 1; }
+  .result ul { margin: 6px 0 0; padding-left: 16px; max-height: 90px; overflow: auto; font-weight: 400; }
+
+  /* Modal & toast */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: grid; place-items: center; padding: 16px; z-index: 50; }
+  .modal { background: var(--bg); border-radius: 10px; padding: 16px; width: 100%; max-width: 380px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .modal h3 { margin: 0 0 4px; font-size: 13px; }
+  .modal p { margin: 0 0 10px; color: var(--text2); }
+  .modal .matchlist { background: var(--bg2); border-radius: 6px; padding: 6px 10px; margin-bottom: 12px; }
+  .modal .matchlist div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+  .choice { display: block; width: 100%; text-align: left; border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--bg); cursor: pointer; margin-bottom: 6px; }
+  .choice:hover { border-color: var(--brand); background: var(--brand-soft); }
+  .choice b { display: block; margin-bottom: 2px; }
+  .choice span { color: var(--text2); }
+  .toast {
+    position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); background: #1e1e1e; color: #fff;
+    padding: 7px 12px; border-radius: 6px; z-index: 60; max-width: 90%; box-shadow: 0 4px 14px rgba(0,0,0,.25);
+    animation: pop .15s ease-out;
+  }
+  .toast.error { background: var(--danger); }
+  @keyframes pop { from { opacity: 0; transform: translate(-50%, 6px); } }
+  .pickbar {
+    position: fixed; top: 8px; left: 12px; right: 12px; z-index: 40; background: var(--brand); color: var(--onbrand);
+    border-radius: 8px; padding: 8px 10px; display: flex; gap: 8px; align-items: center; box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  }
+  .pickbar span { flex: 1; }
+  .pickbar button { background: rgba(255,255,255,.2); border: 0; color: inherit; border-radius: 5px; padding: 3px 8px; cursor: pointer; }
+  #resize { position: fixed; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; z-index: 70; color: var(--text3); }
+</style>
+</head>
+<body>
+
+<div id="main">
+  <!-- 1. Templates -->
+  <section class="step" id="step-templates">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div class="step-title">Templates</div>
+      <div class="step-meta" id="tpl-meta"></div>
+    </div>
+    <div id="tpl-body"></div>
+  </section>
+
+  <!-- 2. Data -->
+  <section class="step" id="step-data">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div class="step-title">Data</div>
+      <div class="step-meta" id="data-meta"></div>
+    </div>
+    <div id="data-body"></div>
+    <input type="file" id="file-input" accept=".xlsx,.xlsm,.xls,.csv,.tsv,.ods,.numbers" hidden>
+  </section>
+
+  <!-- 3. Koppelen -->
+  <section class="step disabled" id="step-map">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div class="step-title">Kolommen koppelen aan lagen</div>
+      <div class="step-meta" id="map-meta"></div>
+    </div>
+    <div id="map-body"></div>
+  </section>
+
+  <!-- 4. Afbeeldingen (alleen bij bestandsnamen) -->
+  <section class="step hidden" id="step-images">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div class="step-title">Afbeeldingen</div>
+      <div class="step-meta" id="img-meta"></div>
+    </div>
+    <div id="img-body"></div>
+    <input type="file" id="img-input" accept="image/*" multiple hidden>
+    <input type="file" id="dir-input" webkitdirectory multiple hidden>
+  </section>
+
+  <!-- Opties -->
+  <section class="step" id="step-options">
+    <details class="options">
+      <summary>
+        <svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+        <span class="step-title">Opties</span>
+        <span class="step-meta" id="opt-meta"></span>
+      </summary>
+      <div class="opt">
+        <label for="o-spacing">Tussenruimte</label>
+        <div class="unit"><input type="number" id="o-spacing" min="0" step="10"><span class="muted">px</span></div>
+      </div>
+      <div class="opt">
+        <label for="o-perrow">Varianten per rij</label>
+        <div class="unit"><input type="number" id="o-perrow" min="0" step="1"><span class="muted">0 = alles op één rij</span></div>
+      </div>
+      <div class="opt">
+        <label for="o-name">Naam van varianten</label>
+        <input type="text" id="o-name" placeholder="{{template}} – {{titel}}">
+      </div>
+      <div class="opt">
+        <label for="o-key">Rij herkennen via</label>
+        <select id="o-key"></select>
+      </div>
+      <div class="opt">
+        <label for="o-empty">Lege cel</label>
+        <select id="o-empty">
+          <option value="keep">Template-inhoud behouden</option>
+          <option value="clear">Laag leegmaken</option>
+          <option value="hide">Laag verbergen</option>
+        </select>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="o-component">
+        <span>Frames omzetten naar component
+          <small>Aanbevolen: varianten worden instances, zodat aanpassingen aan de template automatisch doorgevoerd worden.</small></span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="o-relayout">
+        <span>Automatisch herschikken
+          <small>Verandert de grootte van een template terwijl de plugin open is, dan worden de varianten opnieuw uitgelijnd.</small></span>
+      </label>
+    </details>
+  </section>
+</div>
+
+<footer>
+  <div id="result"></div>
+  <div class="progress hidden" id="progress"><div></div></div>
+  <div class="summary" id="summary"></div>
+  <button class="btn primary" id="generate" disabled>Genereer varianten</button>
+</footer>
+
+<div id="overlay-root"></div>
+<svg id="resize" viewBox="0 0 14 14"><path d="M13 5 5 13M13 9 9 13" stroke="currentColor" stroke-width="1.2"/></svg>
+
+<!-- inject:vendor -->
+
+<script>
+// ===========================================================================
+// State
+
+const S = {
+  selection: { items: [], ignored: 0, hint: '' },
+  templates: [],
+  activeTpl: null,
+  file: null,          // { name, wb, embedded, sheet }
+  data: null,          // { headers, columns: [{name, type}], rows: [{excelRow, values}] }
+  selectedRows: new Set(),
+  mapping: {},         // tplId → { col: layerId }
+  mapSource: {},       // tplId → { col: 'auto' | 'saved' | 'manual' }
+  embedded: new Map(), // marker → { bytes, name }
+  localImages: new Map(),
+  matches: [],
+  mode: 'new',
+  datasetFor: {},
+  removeMissing: false,
+  options: { spacing: 80, perRow: 0, namePattern: '', emptyMode: 'keep', toComponent: true, autoRelayout: true, keyColumn: '__auto' },
+  busy: false,
+  pick: null,
+  result: null,
+  checkToken: 0,
+  thumbUrls: new Map(),
+};
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const post = (msg) => parent.postMessage({ pluginMessage: msg }, '*');
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+
+const ICON = {
+  text: '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 2h7M5 2v6.5" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>',
+  image: '<svg width="11" height="11" viewBox="0 0 12 12"><rect x="1" y="1.5" width="10" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="4.2" cy="4.5" r="1" fill="currentColor"/><path d="M1.5 9.5 4.8 6.6l2 1.8L8.6 6.8 10.6 9" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
+  target: '<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="1.3" fill="currentColor"/><path d="M7 0.5v2.5M7 11v2.5M0.5 7H3M11 7h2.5" stroke="currentColor" stroke-width="1.2"/></svg>',
+  close: '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2 2 8" stroke="currentColor" stroke-width="1.4"/></svg>',
+  zoom: '<svg width="13" height="13" viewBox="0 0 13 13"><circle cx="5.5" cy="5.5" r="4" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8.5 8.5 12 12" stroke="currentColor" stroke-width="1.3"/></svg>',
+  upload: '<svg width="28" height="28" viewBox="0 0 28 28"><path d="M14 18V5M8.5 10.5 14 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 17v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  info: '<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="none" stroke="currentColor"/><path d="M6 5.2V9M6 3v.8" stroke="currentColor" stroke-width="1.2"/></svg>',
+  check: '<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path d="m4 7.2 2 2 4-4.4" fill="none" stroke="#fff" stroke-width="1.5"/></svg>',
+};
+
+// ===========================================================================
+// Hulpfuncties: normaliseren, kolomtypes, automatisch koppelen
+
+const IMG_EXT = /\.(png|jpe?g|gif|webp|avif|bmp|svg|tiff?|heic)(\?.*)?$/i;
+const IS_URL = /^https?:\/\//i;
+const IMG_HEADER = /(image|img|foto|photo|afbeelding|beeld|picture|pic|visual|logo|icon|icoon|packshot|thumb|avatar|achtergrond|background|media)/i;
+const EMBED = '§img:';
+const ID_NAMES = ['id', 'sku', 'code', 'key', 'sleutel', 'nr', 'nummer', 'artikelnummer', 'ref', 'referentie', 'ean'];
+const DECOR = /(logo|icon|icoon|badge|sticker)/i;
+
+const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+const words = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter((w) => w.length > 1);
+
+const SYNONYMS = [
+  ['titel', 'title', 'headline', 'kop', 'kopje', 'heading', 'header'],
+  ['subtitel', 'subtitle', 'subkop', 'subheadline', 'subheading', 'ondertitel', 'tagline'],
+  ['tekst', 'text', 'body', 'bodytext', 'beschrijving', 'description', 'omschrijving', 'copy', 'inhoud', 'content'],
+  ['prijs', 'price', 'kost', 'bedrag', 'amount', 'tarief'],
+  ['cta', 'button', 'knop', 'actie', 'calltoaction', 'buttontext', 'knoptekst'],
+  ['afbeelding', 'image', 'img', 'foto', 'photo', 'picture', 'pic', 'beeld', 'visual', 'packshot'],
+  ['logo', 'merk', 'brand', 'brandlogo'],
+  ['naam', 'name', 'productnaam', 'productname'],
+  ['datum', 'date', 'dag', 'day'],
+  ['locatie', 'location', 'plaats', 'place', 'adres', 'address', 'venue'],
+  ['korting', 'discount', 'promo', 'actieprijs', 'sale'],
+  ['url', 'link', 'website', 'web'],
+  ['achtergrond', 'background', 'bg'],
+  ['icoon', 'icon'],
+];
+const synGroup = (n) => SYNONYMS.findIndex((g) => g.includes(n));
+
+function classifyValue(v) {
+  const s = String(v || '').trim();
+  if (!s) return null;
+  if (s.startsWith(EMBED)) return 'embedded';
+  if (IS_URL.test(s)) return 'url';
+  if (IMG_EXT.test(s) && !/\s{2,}/.test(s)) return 'file';
+  return 'text';
+}
+
+function detectColumnType(name, values) {
+  const vals = values.filter((v) => String(v || '').trim());
+  if (!vals.length) return IMG_HEADER.test(name) ? 'image' : 'text';
+  const kinds = vals.map(classifyValue);
+  const embedded = kinds.filter((k) => k === 'embedded').length;
+  const imgLike = vals.filter((v, i) => kinds[i] === 'embedded' || kinds[i] === 'file' || (kinds[i] === 'url' && IMG_EXT.test(v))).length;
+  const urls = kinds.filter((k) => k === 'url').length;
+  if (embedded / vals.length >= 0.5) return 'image';
+  if (imgLike / vals.length >= 0.6) return 'image';
+  if (IMG_HEADER.test(name) && (imgLike + urls) / vals.length >= 0.6) return 'image';
+  return 'text';
+}
+
+function scoreMatch(col, layer) {
+  const c = norm(col.name);
+  const l = norm(layer.name);
+  if (!c) return 0;
+  if (l === c) return 100;
+  if (layer.kind === 'text' && layer.sample) {
+    const raw = layer.sample.toLowerCase();
+    const needle = col.name.toLowerCase();
+    if (['{{' + needle + '}}', '{' + needle + '}', '[' + needle + ']', '<' + needle + '>', '%' + needle + '%'].some((p) => raw.includes(p))) return 95;
+  }
+  const gc = synGroup(c);
+  if (gc >= 0 && gc === synGroup(l)) return 80;
+  const wl = words(layer.name);
+  const wc = words(col.name);
+  if (wl.some((w) => w === c) || wc.some((w) => w === l)) return 70;
+  if (gc >= 0 && wl.some((w) => synGroup(w) === gc)) return 65;
+  if (c.length >= 3 && l.length >= 3 && (l.includes(c) || c.includes(l))) return 55;
+  if (wc.some((w) => wl.includes(w))) return 40;
+  return 0;
+}
+
+// Koppeling: S.mapping[template][kolom] = [laag-id, …]. Een kolom kan meerdere lagen vullen,
+// een laag hoort bij maximaal één kolom.
+const linked = (tplId, col) => ((S.mapping[tplId] || {})[col] || []);
+
+function linkLayer(tplId, col, layerId, source) {
+  const map = S.mapping[tplId] || (S.mapping[tplId] = {});
+  const src = S.mapSource[tplId] || (S.mapSource[tplId] = {});
+  Object.keys(map).forEach((c) => { if (c !== col && map[c].includes(layerId)) unlinkLayer(tplId, c, layerId); });
+  map[col] = linked(tplId, col).filter((id) => id !== layerId).concat(layerId);
+  src[col] = source;
+}
+
+function unlinkLayer(tplId, col, layerId) {
+  const map = S.mapping[tplId];
+  if (!map || !map[col]) return;
+  map[col] = map[col].filter((id) => id !== layerId);
+  if (!map[col].length) { delete map[col]; delete S.mapSource[tplId][col]; }
+}
+
+function autoMap(tpl, onlyCols) {
+  const cols = S.data.columns.filter((c) => !onlyCols || onlyCols.includes(c.name));
+  const map = S.mapping[tpl.id] || (S.mapping[tpl.id] = {});
+  const src = S.mapSource[tpl.id] || (S.mapSource[tpl.id] = {});
+  const taken = new Set();
+  Object.entries(map).forEach(([k, v]) => { if (!cols.some((c) => c.name === k)) v.forEach((id) => taken.add(id)); });
+  cols.forEach((c) => { delete map[c.name]; delete src[c.name]; });
+
+  const pairs = [];
+  cols.forEach((c) => tpl.layers.forEach((l) => {
+    if (l.kind !== c.type || taken.has(l.id)) return;
+    let s = scoreMatch(c, l);
+    if (s && l.hidden) s -= 5;
+    if (s) pairs.push({ c, l, s });
+  }));
+  pairs.sort((a, b) => b.s - a.s);
+  const doneCols = new Set();
+  pairs.forEach(({ c, l, s }) => {
+    if (taken.has(l.id)) return;
+    // Eerste laag: beste match. Extra lagen enkel bij een duidelijke naammatch (bv. "foto" en "foto blur").
+    if (doneCols.has(c.name) && s < 70) return;
+    map[c.name] = (map[c.name] || []).concat(l.id); src[c.name] = 'auto';
+    doneCols.add(c.name); taken.add(l.id);
+  });
+
+  // Eén beeldkolom over: koppel aan de grootste laag met een afbeelding (geen logo of icoon)
+  const freeImgCols = cols.filter((c) => c.type === 'image' && !doneCols.has(c.name));
+  if (freeImgCols.length === 1) {
+    const c = freeImgCols[0];
+    const cands = tpl.layers
+      .filter((l) => l.kind === 'image' && l.hasImage && !l.root && !taken.has(l.id) && (DECOR.test(c.name) || !DECOR.test(l.name)))
+      .sort((a, b) => (b.area || 0) - (a.area || 0));
+    if (cands.length) { map[c.name] = [cands[0].id]; src[c.name] = 'auto'; }
+  }
+}
+
+function mappedCount(tplId) {
+  const m = S.mapping[tplId] || {};
+  return S.data ? S.data.columns.filter((c) => m[c.name] && m[c.name].length).length : 0;
+}
+
+// ===========================================================================
+// Excel inlezen (incl. afbeeldingen die in de Excel zitten)
+
+function extractEmbeddedImages(buf) {
+  const files = fflate.unzipSync(new Uint8Array(buf));
+  const dec = new TextDecoder();
+  const xml = (p) => files[p] ? new DOMParser().parseFromString(dec.decode(files[p]), 'application/xml') : null;
+  const tags = (el, name) => el ? Array.from(el.getElementsByTagNameNS('*', name)) : [];
+  const resolve = (from, target) => {
+    if (target.startsWith('/')) return target.slice(1);
+    const parts = from.split('/'); parts.pop();
+    target.split('/').forEach((seg) => { if (seg === '..') parts.pop(); else if (seg !== '.') parts.push(seg); });
+    return parts.join('/');
+  };
+  const rels = (part) => {
+    const i = part.lastIndexOf('/');
+    const doc = xml(part.slice(0, i) + '/_rels/' + part.slice(i + 1) + '.rels');
+    const out = {};
+    tags(doc, 'Relationship').forEach((r) => { out[r.getAttribute('Id')] = { target: resolve(part, r.getAttribute('Target')), type: r.getAttribute('Type') || '' }; });
+    return out;
+  };
+
+  const result = {};
+  const wb = xml('xl/workbook.xml');
+  if (!wb) return result;
+  const wbRels = rels('xl/workbook.xml');
+
+  // "Afbeelding in cel" (Excel 365)
+  let vmToMedia = () => null;
+  const rvRel = xml('xl/richData/richValueRel.xml');
+  if (rvRel) {
+    const rr = rels('xl/richData/richValueRel.xml');
+    const relMedia = tags(rvRel, 'rel').map((r) => (rr[r.getAttribute('r:id')] || {}).target);
+    const structs = tags(xml('xl/richData/rdrichvaluestructure.xml'), 's').map((s) => tags(s, 'k').map((k) => k.getAttribute('n')));
+    const rvs = tags(xml('xl/richData/rdrichvalue.xml'), 'rv').map((rv) => {
+      const keys = structs[Number(rv.getAttribute('s'))] || [];
+      const vals = Array.from(rv.children).filter((c) => c.localName === 'v').map((v) => v.textContent);
+      const k = keys.indexOf('_rvRel:LocalImageIdentifier');
+      return Number(k >= 0 ? vals[k] : vals[0]);
+    });
+    const md = xml('xl/metadata.xml');
+    const fm = tags(md, 'futureMetadata').find((f) => f.getAttribute('name') === 'XLRICHVALUE');
+    const futureBk = tags(fm, 'bk').map((bk) => { const rvb = tags(bk, 'rvb')[0]; return rvb ? Number(rvb.getAttribute('i')) : null; });
+    const vmBlock = tags(md, 'valueMetadata')[0];
+    const valueBk = vmBlock ? Array.from(vmBlock.children).filter((c) => c.localName === 'bk').map((bk) => { const rc = tags(bk, 'rc')[0]; return rc ? Number(rc.getAttribute('v')) : null; }) : [];
+    vmToMedia = (vm) => {
+      const fb = valueBk[vm - 1];
+      const rvIndex = fb == null ? vm - 1 : futureBk[fb];
+      const rel = rvs[rvIndex == null ? vm - 1 : rvIndex];
+      return relMedia[rel];
+    };
+  }
+
+  tags(wb, 'sheet').forEach((sh) => {
+    const name = sh.getAttribute('name');
+    const rel = wbRels[sh.getAttribute('r:id')];
+    if (!rel) return;
+    const path = rel.target;
+    const map = {};
+    const add = (r, c, media) => {
+      if (media && files[media]) map[r + ',' + c] = { bytes: files[media], name: media.split('/').pop() };
+    };
+    if (rvRel) {
+      tags(xml(path), 'c').forEach((c) => {
+        const vm = c.getAttribute('vm');
+        if (!vm) return;
+        const addr = XLSX.utils.decode_cell(c.getAttribute('r'));
+        add(addr.r, addr.c, vmToMedia(Number(vm)));
+      });
+    }
+    // Zwevende afbeeldingen: gekoppeld aan de cel linksboven
+    const sheetRels = rels(path);
+    Object.values(sheetRels).filter((r) => /\/drawing$/.test(r.type)).forEach((dr) => {
+      const doc = xml(dr.target);
+      const drRels = rels(dr.target);
+      tags(doc, 'twoCellAnchor').concat(tags(doc, 'oneCellAnchor')).forEach((a) => {
+        const from = tags(a, 'from')[0];
+        const blip = tags(a, 'blip')[0];
+        if (!from || !blip) return;
+        const col = Number(tags(from, 'col')[0].textContent);
+        const row = Number(tags(from, 'row')[0].textContent);
+        const target = drRels[blip.getAttribute('r:embed')];
+        if (target && !map[row + ',' + col]) add(row, col, target.target);
+      });
+    });
+    if (Object.keys(map).length) result[name] = map;
+  });
+  return result;
+}
+
+async function loadFile(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: false, dense: false });
+    let embedded = {};
+    if (/\.xls[xm]$/i.test(file.name)) {
+      try { embedded = extractEmbeddedImages(buf); } catch (e) { console.warn('Afbeeldingen uit Excel lezen mislukt', e); }
+    }
+    const sheet = wb.SheetNames.find((n) => wb.Sheets[n]['!ref'] || embedded[n]) || wb.SheetNames[0];
+    S.file = { name: file.name, wb, embedded, sheet };
+    S.result = null;
+    loadSheet(sheet);
+  } catch (e) {
+    console.error(e);
+    toast('Kon dit bestand niet lezen. Is het een geldige Excel of CSV?', true);
+  }
+}
+
+function loadSheet(name) {
+  const { wb, embedded } = S.file;
+  S.file.sheet = name;
+  const ws = wb.Sheets[name];
+  const emb = embedded[name] || {};
+  S.embedded = new Map();
+
+  const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : { s: { r: 0, c: 0 }, e: { r: 0, c: 0 } };
+  Object.keys(emb).forEach((k) => {
+    const [r, c] = k.split(',').map(Number);
+    range.e.r = Math.max(range.e.r, r); range.e.c = Math.max(range.e.c, c);
+  });
+
+  const grid = [];
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const line = [];
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const ref = XLSX.utils.encode_cell({ r, c });
+      if (emb[r + ',' + c]) {
+        const marker = EMBED + name + '!' + ref;
+        S.embedded.set(marker, emb[r + ',' + c]);
+        line.push(marker);
+        continue;
+      }
+      const cell = ws[ref];
+      let v = '';
+      if (cell && cell.t !== 'e' && cell.t !== 'z') v = cell.w != null ? cell.w : (cell.v != null ? String(cell.v) : '');
+      // "Standaard"-opmaak toont grote getallen als 1,11111E+18 — in een ontwerp wil je ze voluit
+      if (cell && cell.t === 'n' && /E[+-]?\d+$/i.test(v) && (!cell.z || cell.z === 'General') && Math.abs(cell.v) < 1e21) {
+        v = Number(cell.v.toPrecision(15)).toLocaleString('fullwide', { useGrouping: false, maximumFractionDigits: 10 });
+      }
+      // Link achter een tekst ("Bekijk foto") → gebruik de link als het een afbeelding is
+      if (cell && cell.l && cell.l.Target && !IS_URL.test(v) && IMG_EXT.test(cell.l.Target)) v = cell.l.Target;
+      line.push(String(v).trim());
+    }
+    grid.push({ r, line });
+  }
+
+  const headerIdx = grid.findIndex((g) => g.line.some((v) => v));
+  if (headerIdx < 0) {
+    S.data = { headers: [], columns: [], rows: [] };
+    afterDataChange();
+    return;
+  }
+  const rawHeaders = grid[headerIdx].line;
+  const body = grid.slice(headerIdx + 1).filter((g) => g.line.some((v) => v));
+  const seen = {};
+  const cols = [];
+  rawHeaders.forEach((h, i) => {
+    const hasValues = body.some((g) => g.line[i]);
+    if (!h && !hasValues) return;
+    let label = h || 'Kolom ' + XLSX.utils.encode_col(range.s.c + i);
+    if (seen[label]) label += ' (' + (++seen[label]) + ')'; else seen[label] = 1;
+    cols.push({ name: label, i });
+  });
+
+  const rows = body.map((g) => {
+    const values = {};
+    cols.forEach((c) => (values[c.name] = g.line[c.i] || ''));
+    return { excelRow: g.r + 1, values };
+  });
+  const columns = cols.map((c) => ({ name: c.name, type: detectColumnType(c.name, rows.map((r) => r.values[c.name])) }));
+  S.data = { headers: columns.map((c) => c.name), columns, rows };
+  S.selectedRows = new Set(rows.map((_, i) => i));
+  if (!S.options.namePattern || S.options._autoName) {
+    const firstText = columns.find((c) => c.type === 'text' && !ID_NAMES.includes(norm(c.name))) || columns.find((c) => c.type === 'text');
+    S.options.namePattern = '{{template}} – ' + (firstText ? '{{' + firstText.name + '}}' : '{{nr}}');
+    S.options._autoName = true;
+  }
+  afterDataChange();
+}
+
+function afterDataChange() {
+  S.mapping = {}; S.mapSource = {};
+  S.mode = 'new'; S.datasetFor = {}; S.matches = [];
+  S.templates.forEach((t) => autoMap(t));
+  renderAll();
+  checkDataset();
+}
+
+// ===========================================================================
+// Rij-sleutel
+
+function keyColumnOptions() {
+  if (!S.data) return [];
+  return S.data.columns.filter((c) => c.type === 'text');
+}
+
+function isUniqueCol(name) {
+  const vals = S.data.rows.map((r) => String(r.values[name] || '').trim());
+  return vals.every((v) => v) && new Set(vals).size === vals.length;
+}
+
+function effectiveKeyColumn() {
+  if (!S.data) return '__row';
+  const k = S.options.keyColumn;
+  if (k && k !== '__auto') return k === '__row' || S.data.headers.includes(k) ? k : '__row';
+  const idCol = S.data.columns.find((c) => ID_NAMES.includes(norm(c.name)) && isUniqueCol(c.name));
+  if (idCol) return idCol.name;
+  // Liefst een korte, unieke kolom (naam, titel) — geen lange tekst die vaak aangepast wordt
+  const avgLen = (c) => S.data.rows.reduce((n, r) => n + String(r.values[c.name] || '').length, 0) / (S.data.rows.length || 1);
+  const unique = S.data.columns.filter((c) => c.type === 'text' && isUniqueCol(c.name)).sort((a, b) => avgLen(a) - avgLen(b));
+  const short = unique.find((c) => avgLen(c) <= 40);
+  if (short) return short.name;
+  if (unique.length) return unique[0].name;
+  return '__row';
+}
+
+function rowKeyFor(row, kc) {
+  return kc === '__row' ? 'row:' + row.excelRow : String(row.values[kc] || '').trim();
+}
+
+// ===========================================================================
+// Eerder gebruikte Excel herkennen
+
+function checkDataset() {
+  if (!S.data || !S.templates.length) return;
+  S.checkToken++;
+  post({
+    type: 'check-dataset',
+    token: S.checkToken,
+    templateIds: S.templates.map((t) => t.id),
+    fileName: S.file.name,
+    sheet: S.file.sheet,
+    headers: S.data.headers,
+  });
+}
+
+function onDatasetMatches(msg) {
+  if (msg.token !== S.checkToken) return;
+  S.matches = msg.matches;
+  let restored = 0;
+  msg.matches.forEach((m) => {
+    const tpl = S.templates.find((t) => t.id === m.templateId);
+    if (!tpl) return;
+    S.mapping[tpl.id] = S.mapping[tpl.id] || {};
+    S.mapSource[tpl.id] = S.mapSource[tpl.id] || {};
+    const ids = new Set(tpl.layers.map((l) => l.id));
+    Object.entries(m.mapping).forEach(([col, value]) => {
+      const c = S.data.columns.find((x) => x.name === col);
+      const valid = [].concat(value).filter((id) => ids.has(id));
+      if (!c || !valid.length || S.mapSource[tpl.id][col] === 'manual') return;
+      const l = tpl.layers.find((x) => x.id === valid[0]);
+      if (l.kind !== c.type) c.type = l.kind;
+      valid.forEach((id) => linkLayer(tpl.id, col, id, 'saved'));
+      restored++;
+    });
+    if (m.keyColumn && (m.keyColumn === '__row' || S.data.headers.includes(m.keyColumn))) S.options.keyColumn = m.keyColumn;
+  });
+  const withVariants = msg.matches.filter((m) => m.count > 0);
+  renderAll();
+  if (withVariants.length) showReuseModal(withVariants);
+  else if (restored) toast('Koppeling van de vorige keer hersteld');
+}
+
+function showReuseModal(matches) {
+  const total = matches.reduce((a, m) => a + m.count, 0);
+  const when = (t) => new Date(t).toLocaleString('nl-BE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const root = $('#overlay-root');
+  root.innerHTML = `
+    <div class="overlay">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>Deze data werd al eerder gebruikt</h3>
+        <p>Er bestaan al ${plural(total, 'variant', 'varianten')} op basis van <b>${esc(matches[0].fileName)}</b>.</p>
+        <div class="matchlist">
+          ${matches.map((m) => `<div><span>${esc(m.templateName)}</span><span class="muted">${plural(m.count, 'variant', 'varianten')} · ${when(m.updatedAt)}</span></div>`).join('')}
+        </div>
+        <button class="choice" data-choice="update">
+          <b>Bestaande varianten bijwerken</b>
+          <span>Teksten en afbeeldingen worden vervangen. Nieuwe rijen krijgen een nieuwe variant.</span>
+        </button>
+        <label class="check" style="margin:0 0 10px 4px">
+          <input type="checkbox" id="m-remove"> <span>Varianten verwijderen van rijen die niet meer in de Excel staan</span>
+        </label>
+        <button class="choice" data-choice="new">
+          <b>Nieuwe set maken</b>
+          <span>De bestaande varianten blijven ongemoeid; er komt een nieuwe set onder.</span>
+        </button>
+      </div>
+    </div>`;
+  root.querySelectorAll('.choice').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.choice === 'update') {
+      S.mode = 'update';
+      S.removeMissing = $('#m-remove').checked;
+      S.datasetFor = {};
+      matches.forEach((m) => (S.datasetFor[m.templateId] = m.datasetId));
+      const o = matches[0].options || {};
+      if (o.spacing != null) S.options.spacing = o.spacing;
+      if (o.perRow != null) S.options.perRow = o.perRow;
+      if (o.emptyMode) S.options.emptyMode = o.emptyMode;
+      if (o.namePattern) { S.options.namePattern = o.namePattern; S.options._autoName = false; }
+    } else {
+      S.mode = 'new';
+      S.datasetFor = {};
+    }
+    root.innerHTML = '';
+    renderAll();
+  }));
+}
+
+// ===========================================================================
+// Afbeeldingen ophalen
+
+function localLookup(value) {
+  let base = String(value).split(/[\\/]/).pop().trim().toLowerCase();
+  try { base = decodeURIComponent(base); } catch (e) { /* laat staan */ }
+  if (S.localImages.has(base)) return S.localImages.get(base);
+  const stem = base.replace(/\.[^.]+$/, '');
+  for (const [name, f] of S.localImages) if (name.replace(/\.[^.]+$/, '') === stem) return f;
+  return null;
+}
+
+function fixUrl(u) {
+  if (/dropbox\.com/.test(u)) {
+    try { const url = new URL(u); url.searchParams.delete('dl'); url.searchParams.set('raw', '1'); return url.toString(); } catch (e) { return u; }
+  }
+  const g = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (g) return 'https://drive.google.com/uc?export=download&id=' + g[1];
+  return u;
+}
+
+function sniff(bytes) {
+  if (bytes[0] === 0x89 && bytes[1] === 0x50) return 'png';
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) return 'jpg';
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return 'gif';
+  return null;
+}
+
+/** Figma aanvaardt PNG/JPG/GIF tot 4096px — al de rest wordt omgezet. */
+async function normalizeImage(bytes, mime) {
+  const kind = sniff(bytes);
+  let bmp;
+  try { bmp = await createImageBitmap(new Blob([bytes], { type: mime || '' })); } catch (e) { return kind ? bytes : null; }
+  const max = 4096;
+  if (kind && bmp.width <= max && bmp.height <= max) return bytes;
+  const scale = Math.min(1, max / bmp.width, max / bmp.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  const type = kind === 'jpg' ? 'image/jpeg' : 'image/png';
+  const blob = await new Promise((r) => canvas.toBlob(r, type, 0.92));
+  return new Uint8Array(await blob.arrayBuffer());
+}
+
+async function resolveImages(values, onProgress) {
+  const out = {};
+  const failed = [];
+  let done = 0;
+  const queue = values.slice();
+  const worker = async () => {
+    while (queue.length) {
+      const v = queue.shift();
+      let bytes = null;
+      let mime = '';
+      try {
+        const kind = classifyValue(v);
+        if (kind === 'embedded') {
+          const e = S.embedded.get(v);
+          if (e) { bytes = e.bytes; mime = /\.svg$/i.test(e.name) ? 'image/svg+xml' : ''; }
+        } else if (kind === 'url') {
+          const res = await fetch(fixUrl(v));
+          if (res.ok) { bytes = new Uint8Array(await res.arrayBuffer()); mime = res.headers.get('content-type') || ''; }
+        } else {
+          const f = localLookup(v);
+          if (f) { bytes = new Uint8Array(await f.arrayBuffer()); mime = f.type; }
+        }
+        if (bytes) bytes = await normalizeImage(bytes, mime);
+      } catch (e) {
+        bytes = null;
+      }
+      if (bytes) out[v] = bytes; else failed.push(v);
+      onProgress(++done, values.length);
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  return { images: out, failed };
+}
+
+function imageColumnsInUse() {
+  if (!S.data) return [];
+  return S.data.columns.filter((c) => c.type === 'image' && S.templates.some((t) => linked(t.id, c.name).length));
+}
+
+function fileRefs() {
+  const refs = new Set();
+  if (!S.data) return [];
+  S.data.columns.filter((c) => c.type === 'image').forEach((c) => {
+    S.data.rows.forEach((r) => { const v = r.values[c.name]; if (classifyValue(v) === 'file') refs.add(v); });
+  });
+  return Array.from(refs);
+}
+
+// ===========================================================================
+// Rendering
+
+function renderAll() {
+  renderTemplates();
+  renderData();
+  renderMapping();
+  renderImages();
+  renderOptions();
+  renderFooter();
+}
+
+function setStepState(id, state) {
+  const el = $(id);
+  el.classList.remove('done', 'active', 'disabled');
+  if (state) el.classList.add(state);
+}
+
+function renderTemplates() {
+  const body = $('#tpl-body');
+  const sel = S.selection;
+  const selIds = sel.items.map((i) => i.id).join();
+  const curIds = S.templates.map((t) => t.id).join();
+  let html = '';
+
+  if (S.templates.length && sel.items.length && selIds !== curIds) {
+    html += `<div class="banner"><span>${plural(sel.items.length, 'frame', 'frames')} geselecteerd in Figma.</span>
+      <button class="btn small" data-act="use-sel">Gebruik selectie</button>
+      ${sel.items.some((i) => !S.templates.find((t) => t.id === i.id)) ? '<button class="btn small" data-act="add-sel">Voeg toe</button>' : ''}</div>`;
+  }
+  if (sel.hint) html += `<div class="banner warn"><span>${esc(sel.hint)}</span></div>`;
+
+  if (!S.templates.length) {
+    html += `<div class="empty"><strong>Selecteer één of meer frames in Figma</strong>
+      Bijvoorbeeld een post, story en banner. Elk frame wordt een template.</div>`;
+  } else {
+    S.templates.forEach((t) => {
+      const nText = t.layers.filter((l) => l.kind === 'text').length;
+      const nImg = t.layers.filter((l) => l.kind === 'image' && (l.hasImage || !l.root)).length;
+      const thumb = t.thumbUrl ? `<img src="${t.thumbUrl}" alt="">` : '';
+      const typeLabel = t.type === 'COMPONENT' ? '<span class="pill comp">Component</span>' : t.type === 'INSTANCE' ? '<span class="pill">Instance</span>' : '';
+      html += `<div class="tpl">
+        <div class="tpl-thumb">${thumb}</div>
+        <div class="tpl-body">
+          <div class="tpl-name">${esc(t.name)}</div>
+          <div class="tpl-sub">${t.width} × ${t.height} · ${plural(nText, 'tekstlaag', 'tekstlagen')} · ${plural(nImg, 'beeldlaag', 'beeldlagen')} ${typeLabel}</div>
+        </div>
+        <button class="icon-btn" title="Toon in Figma" data-act="zoom" data-id="${t.id}">${ICON.zoom}</button>
+        <button class="icon-btn" title="Verwijder uit lijst" data-act="remove-tpl" data-id="${t.id}">${ICON.close}</button>
+      </div>`;
+      if (t.sets && t.sets.length) {
+        html += `<div class="tpl-sets">${t.sets.slice(0, 3).map((s) => `
+          <div class="set-row"><span>↳ ${esc(s.fileName)} · ${plural(s.count, 'variant', 'varianten')}</span>
+            <button class="btn ghost small" data-act="show-set" data-id="${t.id}" data-ds="${s.id}">Toon</button>
+            <button class="btn ghost small" data-act="relayout" data-id="${t.id}" data-ds="${s.id}">Herschik</button></div>`).join('')}</div>`;
+      }
+    });
+  }
+  body.innerHTML = html;
+  $('#tpl-meta').textContent = S.templates.length ? S.templates.length + ' geselecteerd' : '';
+  setStepState('#step-templates', S.templates.length ? 'done' : 'active');
+}
+
+function renderData() {
+  const body = $('#data-body');
+  if (!S.file) {
+    body.innerHTML = `<div class="drop" id="drop-data">
+      <div class="drop-icon">${ICON.upload}</div>
+      <strong>Sleep je Excel hierheen</strong> of klik om te bladeren<br>
+      <span class="faint">.xlsx, .xls, .csv — eerste rij = kolomnamen</span></div>`;
+    $('#data-meta').textContent = '';
+    setStepState('#step-data', S.templates.length ? 'active' : null);
+    bindDrop($('#drop-data'), handleDataFiles, () => $('#file-input').click());
+    return;
+  }
+  const d = S.data;
+  const sheets = S.file.wb.SheetNames;
+  const nEmb = S.embedded.size;
+  let html = `<div class="file-card">
+    <div class="ficon">${/\.csv$/i.test(S.file.name) ? 'CSV' : 'XLS'}</div>
+    <div class="fbody">
+      <div class="fname">${esc(S.file.name)}</div>
+      <div class="muted">
+        ${sheets.length > 1 ? `<select class="inline" id="sheet-select">${sheets.map((s) => `<option ${s === S.file.sheet ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select> · ` : ''}
+        ${plural(d.rows.length, 'rij', 'rijen')} · ${plural(d.columns.length, 'kolom', 'kolommen')}${nEmb ? ' · ' + plural(nEmb, 'afbeelding', 'afbeeldingen') + ' in Excel' : ''}
+      </div>
+    </div>
+    <button class="btn small" data-act="replace-file">Vervang</button>
+  </div>`;
+
+  if (d.columns.length) {
+    html += `<div class="cols">${d.columns.map((c) => `
+      <span class="col-chip ${c.type}" data-act="toggle-type" data-col="${esc(c.name)}" title="Klik om te wisselen tussen tekst en afbeelding">
+        <span class="t">${ICON[c.type]}</span>${esc(c.name)}</span>`).join('')}</div>`;
+
+    const cols = d.columns;
+    const shown = d.rows.slice(0, 200);
+    const allOn = S.selectedRows.size === d.rows.length;
+    const open = S.previewOpen != null ? S.previewOpen : d.rows.length <= 8;
+    html += `<details class="preview" ${open ? 'open' : ''}>
+      <summary>Voorbeeld &amp; rijen kiezen · ${S.selectedRows.size} van ${d.rows.length} geselecteerd</summary>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="chk"><input type="checkbox" data-act="rows-all" ${allOn ? 'checked' : ''}></th><th class="faint">#</th>${cols.map((c) => `<th>${esc(c.name)}</th>`).join('')}</tr></thead>
+        <tbody>${shown.map((r, i) => `<tr class="${S.selectedRows.has(i) ? '' : 'off'}">
+          <td class="chk"><input type="checkbox" data-act="row" data-i="${i}" ${S.selectedRows.has(i) ? 'checked' : ''}></td>
+          <td class="faint">${r.excelRow}</td>
+          ${cols.map((c) => `<td title="${esc(r.values[c.name].startsWith(EMBED) ? 'Afbeelding uit Excel' : r.values[c.name])}">${cellPreview(c, r.values[c.name])}</td>`).join('')}
+        </tr>`).join('')}</tbody>
+      </table></div>
+      ${d.rows.length > shown.length ? `<div class="faint" style="margin-top:4px">Eerste ${shown.length} rijen getoond.</div>` : ''}
+    </details>`;
+  } else {
+    html += `<div class="banner warn" style="margin-top:8px"><span>Dit werkblad is leeg.</span></div>`;
+  }
+  body.innerHTML = html;
+  $('#data-meta').textContent = S.selectedRows.size + ' rijen';
+  setStepState('#step-data', d.rows.length ? 'done' : 'active');
+  const det = body.querySelector('details.preview');
+  if (det) det.addEventListener('toggle', () => (S.previewOpen = det.open));
+  const ss = $('#sheet-select');
+  if (ss) ss.addEventListener('change', () => loadSheet(ss.value));
+}
+
+function cellPreview(col, v) {
+  if (!v) return '<span class="faint">—</span>';
+  if (col.type !== 'image') return esc(v);
+  const kind = classifyValue(v);
+  let src = null;
+  if (kind === 'embedded') src = blobUrlFor(v, () => { const e = S.embedded.get(v); return e && new Blob([e.bytes]); });
+  else if (kind === 'url') src = fixUrl(v);
+  else if (kind === 'file') {
+    const f = localLookup(v);
+    if (!f) return `<span class="missing" title="${esc(v)}">ontbreekt · ${esc(v)}</span>`;
+    src = blobUrlFor('file:' + f.name + f.size, () => f);
+  } else return esc(v);
+  return `<img class="thumb" src="${esc(src)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'missing',textContent:'kan niet laden'}))">`;
+}
+
+function blobUrlFor(key, make) {
+  if (!S.thumbUrls.has(key)) {
+    const b = make();
+    if (!b) return '';
+    S.thumbUrls.set(key, URL.createObjectURL(b));
+  }
+  return S.thumbUrls.get(key);
+}
+
+function renderMapping() {
+  const body = $('#map-body');
+  const ready = S.data && S.data.columns.length && S.templates.length;
+  if (!ready) {
+    body.innerHTML = '<div class="faint">Kies eerst templates en data.</div>';
+    $('#map-meta').textContent = '';
+    setStepState('#step-map', 'disabled');
+    return;
+  }
+  if (!S.templates.find((t) => t.id === S.activeTpl)) S.activeTpl = S.templates[0].id;
+  const tpl = S.templates.find((t) => t.id === S.activeTpl);
+  const cols = S.data.columns;
+  let html = '';
+
+  if (S.templates.length > 1) {
+    html += `<div class="tabs">${S.templates.map((t) => {
+      const n = mappedCount(t.id);
+      return `<button class="tab ${t.id === S.activeTpl ? 'active' : ''}" data-act="tab" data-id="${t.id}">${esc(t.name)}
+        <span class="count ${n === cols.length ? 'ok' : ''}">${n}/${cols.length}</span></button>`;
+    }).join('')}</div>`;
+  }
+
+  const map = S.mapping[tpl.id] || {};
+  const src = S.mapSource[tpl.id] || {};
+  const usedBy = {};
+  Object.entries(map).forEach(([c, list]) => list.forEach((id) => (usedBy[id] = c)));
+  const layerLabel = (l) => (l.root ? l.name + ' (achtergrond)' : l.name);
+
+  html += cols.map((c) => {
+    const layers = tpl.layers.filter((l) => l.kind === c.type);
+    const curList = linked(tpl.id, c.name);
+    const cur = curList.length > 0;
+    const picking = S.pick && S.pick.tplId === tpl.id && S.pick.col === c.name;
+    const badge = cur ? `<span class="badge ${src[c.name] || 'manual'}">${{ auto: 'auto', saved: 'vorig', manual: 'manueel' }[src[c.name] || 'manual']}</span>` : '<span class="badge none">—</span>';
+    const opts = layers.filter((l) => !curList.includes(l.id)).map((l) => {
+      let label = layerLabel(l);
+      if (l.kind === 'text' && l.sample && norm(l.sample) !== norm(l.name)) label += ' — “' + l.sample.slice(0, 24) + (l.sample.length > 24 ? '…' : '') + '”';
+      if (l.trail) label += '  ·  ' + l.trail;
+      if (l.hidden) label += '  (verborgen)';
+      if (usedBy[l.id] && usedBy[l.id] !== c.name) label = '✓ ' + label;
+      return `<option value="${l.id}">${esc(label)}</option>`;
+    }).join('');
+    const chips = curList.map((id) => {
+      const l = tpl.layers.find((x) => x.id === id);
+      if (!l) return '';
+      return `<span class="chip" title="${esc(l.trail ? l.trail + ' › ' + l.name : l.name)}"><span>${esc(layerLabel(l))}</span>
+        <button data-act="unlink" data-col="${esc(c.name)}" data-id="${id}" title="Ontkoppel">${ICON.close}</button></span>`;
+    }).join('');
+    const placeholder = cur ? '+ laag' : layers.length ? 'Niet koppelen' : 'Geen ' + (c.type === 'image' ? 'beeldlagen' : 'tekstlagen') + ' gevonden';
+    const select = cur && !opts ? '' : `<select data-act="map-add" data-col="${esc(c.name)}" class="${cur ? 'add' : 'unmapped'}" title="${cur ? 'Deze kolom ook in een andere laag gebruiken' : ''}">
+        <option value="">${placeholder}</option>${opts}</select>`;
+    return `<div class="maprow ${picking ? 'picking' : ''}">
+      <div class="colname">
+        <button class="type-btn ${c.type}" data-act="toggle-type" data-col="${esc(c.name)}" title="${c.type === 'image' ? 'Afbeelding' : 'Tekst'} — klik om te wisselen">${ICON[c.type]}</button>
+        <b title="${esc(c.name)}">${esc(c.name)}</b>
+      </div>
+      <span class="arrow">→</span>
+      <div class="targets">${chips}${select}</div>
+      <button class="icon-btn ${picking ? 'on' : ''}" data-act="pick" data-col="${esc(c.name)}" title="${cur ? 'Nog een laag toevoegen: klik' : 'Klik'} daarna op de laag in Figma">${ICON.target}</button>
+      ${badge}
+    </div>`;
+  }).join('');
+
+  const n = mappedCount(tpl.id);
+  const unmapped = cols.length - n;
+  html += `<div class="hint">${ICON.info}<span>${unmapped
+    ? `${plural(unmapped, 'kolom wordt', 'kolommen worden')} niet gebruikt voor <b>${esc(tpl.name)}</b>. Kies een laag, of klik op ◎ en selecteer de laag op het canvas.`
+    : 'Alle kolommen zijn gekoppeld.'} Een kolom kan meerdere lagen vullen via <i>+ laag</i> (bv. een foto als avatar én als achtergrond). Tip: geef lagen dezelfde naam als de kolom (bv. <i>titel</i>) om automatisch te koppelen.</span></div>`;
+
+  body.innerHTML = html;
+  const total = S.templates.reduce((a, t) => a + mappedCount(t.id), 0);
+  $('#map-meta').textContent = S.templates.length > 1 ? total + ' koppelingen' : n + '/' + cols.length + ' gekoppeld';
+  setStepState('#step-map', S.templates.every((t) => mappedCount(t.id) > 0) ? 'done' : 'active');
+}
+
+function renderImages() {
+  const refs = fileRefs();
+  const step = $('#step-images');
+  if (!refs.length) { step.classList.add('hidden'); return; }
+  step.classList.remove('hidden');
+  const found = refs.filter((r) => localLookup(r));
+  const missing = refs.filter((r) => !localLookup(r));
+  const pct = Math.round((found.length / refs.length) * 100);
+  $('#img-body').innerHTML = `
+    <div class="imgstat"><div class="bar"><div style="width:${pct}%"></div></div><span class="muted">${found.length}/${refs.length} gevonden</span></div>
+    <div class="drop" id="drop-img">
+      <strong>Sleep je afbeeldingen of map hierheen</strong><br>
+      <span class="faint">De Excel verwijst naar bestandsnamen — die zoeken we in wat je hier toevoegt.</span><br>
+      <span style="display:inline-flex;gap:6px;margin-top:8px">
+        <button class="btn small" data-act="pick-imgs">Kies bestanden</button>
+        <button class="btn small" data-act="pick-dir">Kies map</button>
+      </span>
+    </div>
+    ${missing.length ? `<div class="missing-list">Nog niet gevonden: ${missing.slice(0, 6).map((m) => `<code>${esc(m)}</code>`).join(' ')}${missing.length > 6 ? ' en ' + (missing.length - 6) + ' andere' : ''}</div>` : ''}`;
+  $('#img-meta').textContent = missing.length ? missing.length + ' ontbreken' : 'alles gevonden';
+  setStepState('#step-images', missing.length ? 'active' : 'done');
+  bindDrop($('#drop-img'), handleImageFiles, null);
+}
+
+function renderOptions() {
+  const o = S.options;
+  $('#o-spacing').value = o.spacing;
+  $('#o-perrow').value = o.perRow;
+  $('#o-name').value = o.namePattern;
+  $('#o-empty').value = o.emptyMode;
+  $('#o-component').checked = o.toComponent;
+  $('#o-relayout').checked = o.autoRelayout;
+  const key = $('#o-key');
+  const eff = effectiveKeyColumn();
+  key.innerHTML = `<option value="__auto">Automatisch (${eff === '__row' ? 'rijnummer' : esc(eff)})</option>` +
+    keyColumnOptions().map((c) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('') +
+    '<option value="__row">Rijnummer</option>';
+  key.value = [...key.options].some((op) => op.value === o.keyColumn) ? o.keyColumn : '__auto';
+  $('#opt-meta').textContent = o.spacing + ' px' + (o.perRow ? ' · ' + o.perRow + ' per rij' : '') + (o.toComponent ? ' · component' : '');
+}
+
+function renderFooter() {
+  const btn = $('#generate');
+  const summary = $('#summary');
+  const res = $('#result');
+
+  if (S.result) {
+    const r = S.result;
+    const warn = r.warnings.length > 0 || (r.failed && r.failed.length);
+    const parts = [];
+    if (r.created) parts.push(plural(r.created, 'variant', 'varianten') + ' gemaakt');
+    if (r.updated) parts.push(r.updated + ' bijgewerkt');
+    if (r.removed) parts.push(r.removed + ' verwijderd');
+    res.innerHTML = `<div class="result ${warn ? 'has-warn' : ''}">
+      <div class="result-head"><span style="color:${warn ? 'var(--warning)' : 'var(--success)'}">${ICON.check}</span><span class="rtext">${parts.join(' · ') || 'Niets gewijzigd'}</span>
+        <button class="btn small" data-act="show-result">Toon</button>
+        <button class="icon-btn" data-act="close-result" title="Sluiten">${ICON.close}</button></div>
+      ${warn ? `<ul>${(r.failed || []).slice(0, 5).map((f) => `<li>Afbeelding niet geladen: ${esc(f.startsWith(EMBED) ? f.slice(EMBED.length) : f)}</li>`).join('')}
+        ${r.warnings.map((w) => `<li>${esc(w.text)}${w.count > 1 ? ' <span class="faint">(×' + w.count + ')</span>' : ''}</li>`).join('')}</ul>` : ''}
+    </div>`;
+  } else res.innerHTML = '';
+
+  const rows = S.data ? S.selectedRows.size : 0;
+  const tpls = S.templates.length;
+  const mappedTpls = S.templates.filter((t) => mappedCount(t.id) > 0);
+  const total = rows * mappedTpls.length;
+  const upd = S.mode === 'update' && Object.keys(S.datasetFor).length > 0;
+
+  if (S.busy) {
+    btn.disabled = true;
+    return;
+  }
+  let text = '';
+  if (!tpls) text = 'Selecteer een template om te beginnen';
+  else if (!S.data) text = 'Voeg een Excel toe';
+  else if (!rows) text = 'Geen rijen geselecteerd';
+  else if (!mappedTpls.length) text = 'Koppel minstens één kolom aan een laag';
+  else {
+    const conv = S.options.toComponent ? S.templates.filter((t) => t.type === 'FRAME' || t.type === 'GROUP').length : 0;
+    text = `<span><b>${plural(mappedTpls.length, 'template', 'templates')}</b> × <b>${plural(rows, 'rij', 'rijen')}</b></span>` +
+      (upd ? '<span class="pill comp" style="background:var(--brand-soft);color:var(--brand-text)">bijwerken</span>' : conv ? `<span class="faint">${plural(conv, 'frame wordt component', 'frames worden componenten')}</span>` : '');
+  }
+  summary.innerHTML = text;
+  btn.disabled = !(tpls && rows && mappedTpls.length);
+  btn.textContent = upd ? `Werk ${plural(total, 'variant', 'varianten')} bij` : `Genereer ${plural(total, 'variant', 'varianten')}`;
+  if (!total) btn.textContent = 'Genereer varianten';
+}
+
+// ===========================================================================
+// Acties
+
+function useSelection(add) {
+  let ids = S.selection.items.map((i) => i.id);
+  if (add) ids = S.templates.map((t) => t.id).concat(ids.filter((id) => !S.templates.find((t) => t.id === id)));
+  post({ type: 'load-templates', ids });
+}
+
+function onTemplates(list) {
+  S.templates.forEach((t) => { if (t.thumbUrl && !list.find((n) => n.id === t.id)) URL.revokeObjectURL(t.thumbUrl); });
+  S.templates = list.map((t) => {
+    const prev = S.templates.find((p) => p.id === t.id);
+    if (prev && prev.thumbUrl) URL.revokeObjectURL(prev.thumbUrl);
+    t.thumbUrl = t.thumb ? URL.createObjectURL(new Blob([t.thumb], { type: 'image/png' })) : null;
+    return t;
+  });
+  if (S.data) {
+    S.templates.forEach((t) => {
+      if (!S.mapping[t.id]) autoMap(t);
+      else {
+        // Koppelingen naar lagen die niet meer bestaan opruimen
+        const ids = new Set(t.layers.map((l) => l.id));
+        Object.keys(S.mapping[t.id]).forEach((c) => S.mapping[t.id][c].filter((id) => !ids.has(id)).forEach((id) => unlinkLayer(t.id, c, id)));
+      }
+    });
+  }
+  renderAll();
+  checkDataset();
+}
+
+function toggleType(col) {
+  const c = S.data.columns.find((x) => x.name === col);
+  c.type = c.type === 'image' ? 'text' : 'image';
+  S.templates.forEach((t) => autoMap(t, [col]));
+  renderAll();
+}
+
+function startPick(col) {
+  if (S.pick && S.pick.col === col) return cancelPick();
+  S.pick = { tplId: S.activeTpl, col };
+  post({ type: 'pick-start', templateId: S.activeTpl, column: col });
+  showPickbar();
+  renderMapping();
+}
+
+function cancelPick() {
+  S.pick = null;
+  post({ type: 'pick-cancel' });
+  const pb = document.querySelector('.pickbar');
+  if (pb) pb.remove();
+  renderMapping();
+}
+
+function showPickbar() {
+  const old = document.querySelector('.pickbar');
+  if (old) old.remove();
+  const tpl = S.templates.find((t) => t.id === S.pick.tplId);
+  const el = document.createElement('div');
+  el.className = 'pickbar';
+  el.innerHTML = `<span>Klik in Figma op de laag voor <b>${esc(S.pick.col)}</b> in ${esc(tpl ? tpl.name : '')}</span><button>Annuleer (Esc)</button>`;
+  el.querySelector('button').addEventListener('click', cancelPick);
+  document.body.appendChild(el);
+}
+
+function onPicked(msg) {
+  const pb = document.querySelector('.pickbar');
+  if (pb) pb.remove();
+  S.pick = null;
+  if (msg.error) { toast(msg.error, true); renderMapping(); return; }
+  const tpl = S.templates.find((t) => t.id === msg.templateId);
+  const col = S.data.columns.find((c) => c.name === msg.column);
+  if (!tpl || !col) return;
+  if (!tpl.layers.find((l) => l.id === msg.layer.id)) tpl.layers.push(msg.layer);
+  if (msg.layer.kind !== col.type) {
+    if (msg.layer.kind === 'text') { toast('Dat is een tekstlaag — "' + col.name + '" is een beeldkolom.', true); renderMapping(); return; }
+    // Een vorm aanklikken voor een tekstkolom → kolom wordt beeldkolom
+    col.type = 'image';
+    S.templates.filter((t) => t.id !== tpl.id).forEach((t) => autoMap(t, [col.name]));
+    toast('"' + col.name + '" wordt nu als afbeelding behandeld');
+  }
+  if (linked(tpl.id, col.name).includes(msg.layer.id)) { toast('"' + msg.layer.name + '" is al gekoppeld aan ' + col.name); renderMapping(); return; }
+  linkLayer(tpl.id, col.name, msg.layer.id, 'manual');
+  renderAll();
+}
+
+async function generate() {
+  if (S.busy) return;
+  const rows = S.data.rows.filter((_, i) => S.selectedRows.has(i));
+  const kc = effectiveKeyColumn();
+  let keys = rows.map((r) => rowKeyFor(r, kc));
+  let keyColumn = kc;
+  if (kc !== '__row' && (keys.some((k) => !k) || new Set(keys).size !== keys.length)) {
+    toast('"' + kc + '" bevat lege of dubbele waarden — rijnummers worden gebruikt als sleutel.');
+    keyColumn = '__row';
+    keys = rows.map((r) => rowKeyFor(r, '__row'));
+  }
+
+  const tplSpecs = S.templates.filter((t) => mappedCount(t.id) > 0);
+  const imgCols = S.data.columns.filter((c) => c.type === 'image' && tplSpecs.some((t) => linked(t.id, c.name).length));
+  const sources = new Set();
+  imgCols.forEach((c) => rows.forEach((r) => { if (r.values[c.name]) sources.add(r.values[c.name]); }));
+
+  S.busy = true;
+  S.result = null;
+  renderFooter();
+  setProgress(0, 'Afbeeldingen voorbereiden…');
+
+  let images = {};
+  let failed = [];
+  if (sources.size) {
+    const res = await resolveImages(Array.from(sources), (d, t) => setProgress(d / t * 0.3, `Afbeeldingen ophalen ${d}/${t}`));
+    images = res.images; failed = res.failed;
+  }
+
+  const newId = 'ds_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const specs = tplSpecs.map((t) => {
+    const mapping = {};
+    Object.entries(S.mapping[t.id]).forEach(([c, list]) => { if (list.length && S.data.headers.includes(c)) mapping[c] = list.slice(); });
+    const existing = S.mode === 'update' ? S.datasetFor[t.id] : null;
+    return { id: t.id, mapping, mode: existing ? 'update' : 'new', datasetId: existing || newId };
+  });
+
+  S.pendingFailed = failed;
+  setProgress(0.3, 'Varianten maken…');
+  post({
+    type: 'generate',
+    templates: specs,
+    rows: rows.map((r, i) => ({ key: keys[i], excelRow: r.excelRow, values: r.values })),
+    columns: S.data.columns,
+    headers: S.data.headers,
+    keyColumn,
+    fileName: S.file.name,
+    sheet: S.file.sheet,
+    images,
+    options: {
+      spacing: Number(S.options.spacing) || 0,
+      perRow: Number(S.options.perRow) || 0,
+      namePattern: S.options.namePattern,
+      emptyMode: S.options.emptyMode,
+      toComponent: S.options.toComponent,
+      removeMissing: S.mode === 'update' && S.removeMissing,
+    },
+  });
+}
+
+function setProgress(frac, label) {
+  const p = $('#progress');
+  p.classList.remove('hidden');
+  p.firstElementChild.style.width = Math.round(frac * 100) + '%';
+  $('#summary').innerHTML = '<span>' + esc(label) + '</span>';
+  $('#generate').textContent = 'Bezig…';
+}
+
+function onDone(msg) {
+  S.busy = false;
+  $('#progress').classList.add('hidden');
+  S.result = Object.assign({}, msg, { failed: S.pendingFailed || [] });
+  // Templates die component werden hebben een nieuw id
+  Object.entries(msg.idMap || {}).forEach(([oldId, newId]) => {
+    if (S.mapping[oldId]) { S.mapping[newId] = S.mapping[oldId]; S.mapSource[newId] = S.mapSource[oldId]; }
+    if (S.activeTpl === oldId) S.activeTpl = newId;
+  });
+  const ids = S.templates.map((t) => msg.idMap[t.id] || t.id);
+  // Na genereren: volgende keer bijwerken, niet opnieuw maken
+  S.mode = 'update';
+  S.datasetFor = {};
+  S.ignoreNextCheck = true;
+  post({ type: 'load-templates', ids });
+  renderFooter();
+}
+
+// ===========================================================================
+// Bestanden binnenhalen (drag & drop, mappen)
+
+function bindDrop(el, handler, onClick) {
+  if (!el) return;
+  if (onClick) el.addEventListener('click', onClick);
+  el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('over'));
+  el.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    el.classList.remove('over');
+    handler(await filesFromDrop(e.dataTransfer));
+  });
+}
+
+async function filesFromDrop(dt) {
+  const items = Array.from(dt.items || []);
+  const entries = items.map((i) => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (!entries.length) return Array.from(dt.files || []);
+  const out = [];
+  const walk = async (entry) => {
+    if (entry.isFile) out.push(await new Promise((r, j) => entry.file(r, j)));
+    else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      let batch;
+      do {
+        batch = await new Promise((r, j) => reader.readEntries(r, j));
+        for (const e of batch) await walk(e);
+      } while (batch.length);
+    }
+  };
+  for (const e of entries) await walk(e);
+  return out;
+}
+
+function handleDataFiles(files) {
+  const f = files.find((x) => /\.(xlsx|xlsm|xls|csv|tsv|ods|numbers)$/i.test(x.name));
+  if (!f) {
+    // Afbeeldingen op de data-zone gedropt? Neem ze mee.
+    if (files.some((x) => /^image\//.test(x.type))) { handleImageFiles(files); return; }
+    return toast('Dat is geen Excel- of CSV-bestand.', true);
+  }
+  loadFile(f);
+  const imgs = files.filter((x) => /^image\//.test(x.type));
+  if (imgs.length) handleImageFiles(imgs);
+}
+
+function handleImageFiles(files) {
+  let n = 0;
+  files.forEach((f) => {
+    if (!/^image\//.test(f.type) && !IMG_EXT.test(f.name)) return;
+    S.localImages.set(f.name.toLowerCase(), f);
+    n++;
+  });
+  if (n) toast(plural(n, 'afbeelding', 'afbeeldingen') + ' toegevoegd');
+  renderImages();
+  renderData();
+}
+
+// ===========================================================================
+// Events
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  const id = el.dataset.id;
+  switch (act) {
+    case 'use-sel': useSelection(false); break;
+    case 'add-sel': useSelection(true); break;
+    case 'zoom': post({ type: 'zoom', ids: [id] }); break;
+    case 'remove-tpl':
+      S.templates = S.templates.filter((t) => t.id !== id);
+      delete S.mapping[id];
+      renderAll();
+      break;
+    case 'show-set': post({ type: 'show-set', templateId: id, datasetId: el.dataset.ds }); break;
+    case 'relayout': post({ type: 'relayout', templateId: id, datasetId: el.dataset.ds }); break;
+    case 'replace-file': $('#file-input').click(); break;
+    case 'toggle-type': toggleType(el.dataset.col); break;
+    case 'tab': S.activeTpl = id; renderMapping(); break;
+    case 'unlink': unlinkLayer(S.activeTpl, el.dataset.col, id); renderAll(); break;
+    case 'pick': startPick(el.dataset.col); break;
+    case 'pick-imgs': e.stopPropagation(); $('#img-input').click(); break;
+    case 'pick-dir': e.stopPropagation(); $('#dir-input').click(); break;
+    case 'show-result': post({ type: 'zoom', ids: S.result.sectionIds }); break;
+    case 'close-result': S.result = null; renderFooter(); break;
+  }
+});
+
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  const act = el.dataset && el.dataset.act;
+  if (act === 'map-add') {
+    if (el.value) linkLayer(S.activeTpl, el.dataset.col, el.value, 'manual');
+    renderAll();
+  } else if (act === 'row') {
+    const i = Number(el.dataset.i);
+    if (el.checked) S.selectedRows.add(i); else S.selectedRows.delete(i);
+    el.closest('tr').classList.toggle('off', !el.checked);
+    updateRowSummary();
+  } else if (act === 'rows-all') {
+    S.selectedRows = el.checked ? new Set(S.data.rows.map((_, i) => i)) : new Set();
+    renderData(); renderFooter();
+  }
+});
+
+function updateRowSummary() {
+  const s = document.querySelector('details.preview > summary');
+  if (s) s.textContent = `Voorbeeld & rijen kiezen · ${S.selectedRows.size} van ${S.data.rows.length} geselecteerd`;
+  $('#data-meta').textContent = S.selectedRows.size + ' rijen';
+  renderFooter();
+}
+
+$('#file-input').addEventListener('change', (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); e.target.value = ''; });
+$('#img-input').addEventListener('change', (e) => { handleImageFiles(Array.from(e.target.files)); e.target.value = ''; });
+$('#dir-input').addEventListener('change', (e) => { handleImageFiles(Array.from(e.target.files)); e.target.value = ''; });
+$('#generate').addEventListener('click', generate);
+
+function saveSettings() {
+  const o = S.options;
+  const persist = { spacing: o.spacing, perRow: o.perRow, emptyMode: o.emptyMode, toComponent: o.toComponent, autoRelayout: o.autoRelayout };
+  post({ type: 'settings', settings: persist });
+}
+$('#o-spacing').addEventListener('input', (e) => { S.options.spacing = Math.max(0, Number(e.target.value) || 0); saveSettings(); $('#opt-meta').textContent = S.options.spacing + ' px'; });
+$('#o-perrow').addEventListener('input', (e) => { S.options.perRow = Math.max(0, Math.floor(Number(e.target.value) || 0)); saveSettings(); });
+$('#o-name').addEventListener('input', (e) => { S.options.namePattern = e.target.value; S.options._autoName = false; });
+$('#o-key').addEventListener('change', (e) => { S.options.keyColumn = e.target.value; renderOptions(); });
+$('#o-empty').addEventListener('change', (e) => { S.options.emptyMode = e.target.value; saveSettings(); });
+$('#o-component').addEventListener('change', (e) => { S.options.toComponent = e.target.checked; saveSettings(); renderOptions(); renderFooter(); });
+$('#o-relayout').addEventListener('change', (e) => { S.options.autoRelayout = e.target.checked; saveSettings(); });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (S.pick) cancelPick();
+    else if ($('#overlay-root').innerHTML) { $('#overlay-root').innerHTML = ''; }
+  }
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !$('#generate').disabled) generate();
+});
+
+// Venster vergroten via het hoekje rechtsonder
+(() => {
+  const handle = $('#resize');
+  let start = null;
+  handle.addEventListener('pointerdown', (e) => {
+    start = { x: e.clientX, y: e.clientY, w: window.innerWidth, h: window.innerHeight };
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!start) return;
+    post({ type: 'resize', w: start.w + e.clientX - start.x, h: start.h + e.clientY - start.y });
+  });
+  handle.addEventListener('pointerup', (e) => {
+    if (!start) return;
+    post({ type: 'resize', w: start.w + e.clientX - start.x, h: start.h + e.clientY - start.y, save: true });
+    start = null;
+  });
+})();
+
+let toastTimer;
+function toast(text, error) {
+  document.querySelectorAll('.toast').forEach((t) => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast' + (error ? ' error' : '');
+  el.textContent = text;
+  document.body.appendChild(el);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), error ? 4500 : 2600);
+}
+
+// ===========================================================================
+// Berichten van Figma
+
+window.onmessage = (event) => {
+  const msg = event.data.pluginMessage;
+  if (!msg) return;
+  switch (msg.type) {
+    case 'settings':
+      Object.assign(S.options, msg.settings);
+      renderOptions();
+      break;
+    case 'selection': {
+      S.selection = msg;
+      if (!S.templates.length && msg.items.length) useSelection(false);
+      else renderTemplates();
+      break;
+    }
+    case 'templates':
+      onTemplates(msg.templates);
+      break;
+    case 'dataset-matches':
+      if (S.ignoreNextCheck) {
+        // Direct na genereren: niet opnieuw vragen, wel bijwerken voorbereiden
+        S.ignoreNextCheck = false;
+        S.matches = msg.matches;
+        S.mode = 'update';
+        S.datasetFor = {};
+        msg.matches.forEach((m) => { if (m.count) S.datasetFor[m.templateId] = m.datasetId; });
+        renderFooter();
+      } else onDatasetMatches(msg);
+      break;
+    case 'picked':
+      onPicked(msg);
+      break;
+    case 'progress':
+      setProgress(0.3 + (msg.done / msg.total) * 0.7, `${msg.label} · ${msg.done}/${msg.total}`);
+      break;
+    case 'done':
+      onDone(msg);
+      break;
+    case 'error':
+      S.busy = false;
+      $('#progress').classList.add('hidden');
+      toast('Er ging iets mis: ' + msg.message, true);
+      renderFooter();
+      break;
+  }
+};
+
+renderAll();
+post({ type: 'ready' });
+</script>
+</body>
+</html>

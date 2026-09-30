@@ -1,0 +1,11 @@
+{
+  "name": "bulk-creator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Figma plugin: varianten genereren uit een Excel",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "example": "node examples/make-example.js"
+  }
+}
