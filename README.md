@@ -87,3 +87,9 @@ src/ui.html       Interface: Excel inlezen, koppelen, afbeeldingen ophalen
 vendor/           SheetJS (Excel) en fflate (afbeeldingen uit .xlsx halen)
 build.js          Bundelt alles tot dist/ui.html + dist/code.js
 ```
+
+## Licentie
+
+© 2026 Dieter De Weirdt. Je mag de plugin gratis gebruiken en de ontwerpen die je ermee maakt vrij inzetten.
+Verspreiden, delen of verkopen van de plugin (of een aangepaste versie) is niet toegestaan.
+Zie [LICENSE](LICENSE) voor de volledige voorwaarden. Bibliotheken van derden: zie [vendor/LICENSES.md](vendor/LICENSES.md).

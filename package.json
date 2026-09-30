@@ -7,5 +7,7 @@
     "build": "node build.js",
     "watch": "node build.js --watch",
     "example": "node examples/make-example.js"
-  }
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Dieter De Weirdt"
 }

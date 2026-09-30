@@ -1,0 +1,69 @@
+Bulk Creator — Gebruikslicentie
+Copyright (c) 2026 Dieter De Weirdt. Alle rechten voorbehouden.
+
+Deze software (de Figma-plugin "Bulk Creator", inclusief broncode, gebouwde bestanden
+en documentatie) is niet open source. Je krijgt enkel de rechten die hieronder staan.
+
+1. WAT MAG
+   a. De plugin gratis installeren en gebruiken in Figma, voor persoonlijke,
+      educatieve en professionele doeleinden.
+   b. De ontwerpen die je met de plugin maakt vrij gebruiken, ook commercieel.
+      Die ontwerpen zijn van jou.
+   c. De software aanpassen voor je eigen gebruik, zolang je die aangepaste
+      versie niet deelt.
+
+2. WAT NIET MAG
+   a. De software, of een deel ervan, verspreiden, publiceren of delen met anderen,
+      in welke vorm ook (bv. als bestand, in een eigen repository, op de Figma
+      Community of in een andere plugin). Wie de plugin wil gebruiken, haalt hem
+      bij de originele bron: https://github.com/dieterdeweirdt/FigmaBulkCreator
+   b. De software verkopen, verhuren, in licentie geven of opnemen in een
+      betalend product of betalende dienst.
+   c. Een aangepaste versie verspreiden of verkopen.
+   d. Deze licentie of de copyrightvermelding verwijderen.
+
+3. GEEN GARANTIE
+   De software wordt geleverd "zoals ze is", zonder enige garantie. De auteur is
+   niet aansprakelijk voor schade die voortvloeit uit het gebruik ervan.
+
+4. SOFTWARE VAN DERDEN
+   De map vendor/ bevat bibliotheken van derden met een eigen licentie; deze
+   licentie is daar niet op van toepassing. Zie vendor/LICENSES.md.
+
+Voor toestemming buiten deze voorwaarden: neem contact op met de auteur.
+
+-------------------------------------------------------------------------------
+
+Bulk Creator — Usage License (English translation; the Dutch text prevails)
+Copyright (c) 2026 Dieter De Weirdt. All rights reserved.
+
+This software (the Figma plugin "Bulk Creator", including source code, built
+files and documentation) is not open source. You only receive the rights below.
+
+1. YOU MAY
+   a. Install and use the plugin in Figma free of charge, for personal,
+      educational and professional purposes.
+   b. Freely use the designs you create with the plugin, including commercially.
+      Those designs are yours.
+   c. Modify the software for your own use, as long as you do not share the
+      modified version.
+
+2. YOU MAY NOT
+   a. Distribute, publish or share the software, or any part of it, in any form
+      (e.g. as a file, in your own repository, on the Figma Community or inside
+      another plugin). Anyone who wants to use the plugin should get it from the
+      original source: https://github.com/dieterdeweirdt/FigmaBulkCreator
+   b. Sell, rent or license the software, or include it in a paid product or
+      service.
+   c. Distribute or sell a modified version.
+   d. Remove this license or the copyright notice.
+
+3. NO WARRANTY
+   The software is provided "as is", without warranty of any kind. The author is
+   not liable for any damage arising from its use.
+
+4. THIRD-PARTY SOFTWARE
+   The vendor/ folder contains third-party libraries under their own licenses;
+   this license does not apply to them. See vendor/LICENSES.md.
+
+For permission beyond these terms, please contact the author.
