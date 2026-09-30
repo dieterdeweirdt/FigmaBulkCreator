@@ -166,7 +166,7 @@ async function describeSelection() {
     } else if (TEMPLATE_TYPES.includes(node.type)) {
       t = node;
     } else if (node.type === 'COMPONENT_SET') {
-      hint = 'Selecteer één variant uit de component set, niet de set zelf.';
+      hint = 'Select a single variant from the component set, not the set itself.';
     }
     if (!t) {
       ignored++;
@@ -279,8 +279,8 @@ async function handlePick() {
     }
   }
 
-  if (!layer) error = 'Die laag hoort niet bij de template "' + (tpl ? tpl.name : '?') + '".';
-  else if (!layerKind(layer)) error = 'De laag "' + layer.name + '" kan geen tekst of afbeelding bevatten.';
+  if (!layer) error = 'That layer is not part of the template "' + (tpl ? tpl.name : '?') + '".';
+  else if (!layerKind(layer)) error = 'The layer "' + layer.name + '" cannot hold text or an image.';
 
   post({
     type: 'picked',
@@ -369,11 +369,11 @@ async function loadFonts(node) {
 
 async function setText(node, text, warn) {
   if (node.type !== 'TEXT') {
-    warn('Laag "' + node.name + '" is geen tekstlaag');
+    warn('Layer "' + node.name + '" is not a text layer');
     return;
   }
   if (node.hasMissingFont) {
-    warn('Ontbrekend lettertype in laag "' + node.name + '"');
+    warn('Missing font in layer "' + node.name + '"');
     return;
   }
   await loadFonts(node);
@@ -382,7 +382,7 @@ async function setText(node, text, warn) {
 
 function setImage(node, hash, warn) {
   if (!('fills' in node) || node.fills === figma.mixed) {
-    warn('Laag "' + node.name + '" kan geen afbeelding bevatten');
+    warn('Layer "' + node.name + '" cannot hold an image');
     return;
   }
   const fills = node.fills.map((p) => JSON.parse(JSON.stringify(p)));
@@ -429,7 +429,7 @@ async function fillVariant(variant, tpl, targets, row, opts, getHash, warn) {
     const raw = row.values[t.col];
     const node = await targetIn(variant, tpl, t);
     if (!node) {
-      warn('Laag voor kolom "' + t.col + '" niet gevonden in een variant');
+      warn('Layer for column "' + t.col + '" not found in a variant');
       continue;
     }
     const empty = raw == null || String(raw).trim() === '';
@@ -456,7 +456,7 @@ function makeName(pattern, tplName, row, nr) {
     const key = k.trim();
     const low = key.toLowerCase();
     if (low === 'template') return tplName;
-    if (low === 'nr' || low === '#' || low === 'rij') return String(nr);
+    if (low === 'nr' || low === '#' || low === 'rij' || low === 'row') return String(nr);
     const v = row.values[key];
     return v == null ? '' : String(v).split('\n')[0].slice(0, 60);
   }).trim() || tplName + ' ' + nr;
@@ -541,10 +541,10 @@ async function generate(msg) {
       try {
         h = figma.createImage(bytes).hash;
       } catch (e) {
-        warn('Afbeelding kon niet verwerkt worden: ' + String(src).slice(0, 80));
+        warn('Image could not be processed: ' + String(src).slice(0, 80));
       }
     } else {
-      warn('Afbeelding niet beschikbaar: ' + String(src).slice(0, 80));
+      warn('Image not available: ' + String(src).slice(0, 80));
     }
     hashCache.set(src, h);
     return h;
@@ -589,7 +589,7 @@ async function generate(msg) {
       const ln = await getNode(layerId);
       const path = ln ? pathFrom(tpl, ln) : null;
       if (!path) {
-        warn('Gekoppelde laag voor "' + col + '" bestaat niet meer in "' + tpl.name + '"');
+        warn('Linked layer for "' + col + '" no longer exists in "' + tpl.name + '"');
         continue;
       }
       targets.push({ col, path, kind: colType[col] || 'text' });
@@ -600,7 +600,7 @@ async function generate(msg) {
         tpl = figma.createComponentFromNode(tpl);
         idMap[oldId] = tpl.id;
       } catch (e) {
-        warn('"' + tpl.name + '" kon niet omgezet worden naar een component; varianten zijn kopieën');
+        warn('"' + tpl.name + '" could not be converted to a component; variants are copies');
       }
     }
     for (const t of targets) {
@@ -699,8 +699,8 @@ async function generate(msg) {
         removed++;
       } else {
         v.setPluginData(KEY.order, String(rows.length + Number(v.getPluginData(KEY.order) || 0)));
-        if (v.name.indexOf('⚠') !== 0) v.name = '⚠ niet meer in Excel – ' + v.name;
-        warn('Variant hoort bij geen rij meer (achteraan gezet, naam begint met ⚠)');
+        if (v.name.indexOf('⚠') !== 0) v.name = '⚠ no longer in Excel – ' + v.name;
+        warn('Variant no longer matches a row (moved to the end, name starts with ⚠)');
       }
     }
 
@@ -750,7 +750,7 @@ async function generate(msg) {
     idMap,
     sectionIds: touched.map((s) => s.id),
   });
-  figma.notify('Bulk Creator: ' + created + ' gemaakt, ' + updated + ' bijgewerkt' + (removed ? ', ' + removed + ' verwijderd' : ''));
+  figma.notify('Bulk Creator: ' + created + ' created, ' + updated + ' updated' + (removed ? ', ' + removed + ' removed' : ''));
 }
 
 // ---------------------------------------------------------------------------
@@ -801,7 +801,7 @@ function relayout(templateId, datasetId) {
   sections.forEach(layoutSection);
   resolveOverlaps();
   if (sections.length) figma.viewport.scrollAndZoomIntoView(sections);
-  figma.notify(sections.length ? 'Varianten herschikt' : 'Geen set gevonden om te herschikken');
+  figma.notify(sections.length ? 'Variants rearranged' : 'No set found to rearrange');
 }
 
 // ---------------------------------------------------------------------------

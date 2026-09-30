@@ -2,7 +2,7 @@
   "name": "bulk-creator",
   "version": "1.0.0",
   "private": true,
-  "description": "Figma plugin: varianten genereren uit een Excel",
+  "description": "Figma plugin: generate design variants from an Excel file",
   "scripts": {
     "build": "node build.js",
     "watch": "node build.js --watch",

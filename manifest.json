@@ -4,10 +4,14 @@
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
-  "editorType": ["figma"],
+  "editorType": [
+    "figma"
+  ],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["*"],
-    "reasoning": "Afbeeldingen worden opgehaald via de URL's die in de Excel staan."
+    "allowedDomains": [
+      "*"
+    ],
+    "reasoning": "Images are fetched from the URLs listed in the Excel file."
   }
 }

@@ -1,96 +1,100 @@
 # Bulk Creator — Figma plugin
 
-Maak in één klik tientallen varianten van een ontwerp (social posts, stories, banners…) op basis van een Excel- of CSV-bestand.
+Create dozens of variants of a design (social posts, stories, banners…) in one click, based on an Excel or CSV file.
 
-## Installeren (development plugin)
+## Installation (development plugin)
 
-1. Download of clone deze repository: `git clone https://github.com/dieterdeweirdt/FigmaBulkCreator.git`
-   (of via GitHub: **Code → Download ZIP**). De gebouwde plugin zit al in `dist/`, Node is dus niet nodig.
-2. Figma desktop → **Plugins → Development → Import plugin from manifest…** → kies `manifest.json`.
-3. Start via **Plugins → Development → Bulk Creator**.
+1. Download or clone this repository: `git clone https://github.com/dieterdeweirdt/FigmaBulkCreator.git`
+   (or on GitHub: **Code → Download ZIP**). The built plugin is already in `dist/`, so you don't need Node.
+2. Figma desktop → **Plugins → Development → Import plugin from manifest…** → choose `manifest.json`.
+3. Run it via **Plugins → Development → Bulk Creator**.
 
-Pas je zelf iets aan in `src/`, voer dan `npm run build` uit (Node vereist). `npm run watch` bouwt automatisch opnieuw bij elke wijziging in `src/`.
-`npm run example` maakt `examples/voorbeeld-campagne.xlsx` om mee te testen.
+If you change anything in `src/`, run `npm run build` (requires Node). `npm run watch` rebuilds automatically on every change in `src/`.
+`npm run example` creates `examples/example-campaign.xlsx` to test with.
 
-## Werkwijze
+## How it works
 
-1. **Templates** — selecteer één of meer frames (bv. post, story, banner). Ze verschijnen meteen in de plugin.
-   Selecteer je later iets anders, dan vraagt de plugin of je die selectie wil gebruiken of toevoegen.
-2. **Data** — sleep een `.xlsx`, `.xls` of `.csv` in de plugin. De eerste gevulde rij bevat de kolomnamen.
-   Kies eventueel een ander werkblad en vink rijen uit die je niet wil.
-3. **Koppelen** — kolommen worden automatisch aan lagen gekoppeld. Lukt dat niet, kies de laag in de lijst
-   of klik op ◎ en klik de laag aan op het canvas. Klik op het icoontje vóór een kolom om te wisselen tussen tekst en afbeelding.
-4. **Afbeeldingen** — verschijnt enkel als de Excel naar bestandsnamen verwijst: sleep dan de map met foto's erin.
-5. **Genereer** (of `⌘/Ctrl + Enter`).
+1. **Templates** — select one or more frames (e.g. a post, story and banner). They show up in the plugin right away.
+   If you select something else later, the plugin asks whether you want to use or add that selection.
+2. **Data** — drop an `.xlsx`, `.xls` or `.csv` file into the plugin. The first filled row contains the column names.
+   Optionally pick another sheet and uncheck the rows you don't want.
+3. **Link** — columns are linked to layers automatically. If that doesn't work, choose the layer from the list
+   or click ◎ and click the layer on the canvas. Click the icon in front of a column to switch between text and image.
+4. **Images** — only appears when the Excel file refers to file names: drop the folder with your photos there.
+5. **Generate** (or `⌘/Ctrl + Enter`).
 
-## Hoe de Excel eruit kan zien
+## What the Excel file can look like
 
-| id  | titel          | subtitel                   | prijs | foto                                 |
-|-----|----------------|----------------------------|-------|--------------------------------------|
-| p01 | Zomer in Gent  | Festivalpakket voor 2      | € 49  | https://…/zomer.jpg                  |
-| p02 | Stadswandeling | Ontdek de verborgen hoekjes| € 15  | wandeling.jpg                        |
+| id  | title          | subtitle                    | price | photo                  |
+|-----|----------------|-----------------------------|-------|------------------------|
+| p01 | Summer in Ghent| Festival package for two    | € 49  | https://…/summer.jpg   |
+| p02 | City walk      | Discover the hidden corners | € 15  | citywalk.jpg           |
 
-Afbeeldingen mogen zijn:
-- een **URL** (de server moet externe toegang toelaten; Dropbox-links worden automatisch omgezet),
-- een **bestandsnaam** (`wandeling.jpg` of `fotos/wandeling.jpg`) — de foto's voeg je toe in stap 4,
-- een **afbeelding in de Excel zelf**: via *Invoegen → Afbeelding → In cel plaatsen* of een zwevende afbeelding in de cel.
+Images can be:
+- a **URL** (the server must allow external access; Dropbox links are converted automatically),
+- a **file name** (`citywalk.jpg` or `photos/citywalk.jpg`) — you add the photos in step 4,
+- an **image inside the Excel file**: via *Insert → Picture → Place in Cell*, or a floating picture on the cell.
 
-## Automatisch koppelen
+## Automatic linking
 
-Een kolom wordt gekoppeld aan een laag als:
-- de laagnaam gelijk is aan de kolomnaam (`titel`, `#titel`, `Titel` — hoofdletters en tekens tellen niet),
-- de tekst in de laag een placeholder bevat (`{{titel}}`, `{titel}`, `[titel]`),
-- ze synoniemen zijn (titel/title/headline, prijs/price, cta/button/knop, foto/image/afbeelding, …),
-- er één beeldkolom is: dan kiest de plugin de grootste laag met een afbeelding die geen logo of icoon is.
+A column is linked to a layer when:
+- the layer name equals the column name (`title`, `#title`, `Title` — case and symbols don't matter),
+- the text in the layer contains a placeholder (`{{title}}`, `{title}`, `[title]`),
+- they are synonyms (title/headline/titel, price/prijs, cta/button/knop, photo/image/foto, …; English and Dutch),
+- there is a single image column: the plugin then picks the largest layer with an image that isn't a logo or icon.
 
-Eén kolom kan **meerdere lagen** vullen: kies via **+ laag** (of ◎) een extra laag. Handig om een profielfoto
-zowel als avatar als als wazige achtergrond te gebruiken — de blur zet je gewoon als *Layer blur* op die laag in de template.
-Lagen met dezelfde naam als de kolom (bv. `foto` en `foto blur`) worden automatisch allebei gekoppeld.
+One column can fill **several layers**: add an extra layer via **+ layer** (or ◎). Handy to use a profile picture
+both as an avatar and as a blurred background — just put a *Layer blur* on that layer in the template.
+Layers named like the column (e.g. `photo` and `photo blur`) are both linked automatically.
 
-Tekstkolommen gaan naar tekstlagen. Beeldkolommen vervangen de **image fill** van een laag (rechthoek, ellips, frame…);
-heeft de laag nog geen image fill, dan wordt er een toegevoegd.
+Text columns go to text layers. Image columns replace the **image fill** of a layer (rectangle, ellipse, frame…);
+if the layer has no image fill yet, one is added.
 
-## Waar komen de varianten?
+## Where do the variants go?
 
-Per template komt er een **frame** onder de templates (handig om in één keer te exporteren), met alle varianten naast elkaar. Meerdere templates
-staan onder elkaar, in dezelfde volgorde als op het canvas. Tussenruimte en "varianten per rij" stel je in bij *Opties*.
+For each template a **frame** is placed below the templates (handy to export in one go), with all variants side by side.
+Multiple templates are stacked, in the same order as on the canvas. Set the spacing and "variants per row" under *Options*.
 
-## Template aanpassen → varianten passen mee aan
+## Edit the template → variants follow
 
-Standaard wordt je frame omgezet naar een **component** en zijn de varianten **instances**. Alles wat je aan de
-template verandert (kleuren, lettertype, positie, extra lagen…) komt dus automatisch in alle varianten.
-Wat uit de Excel komt (tekst, foto) blijft per variant behouden.
+By default your frame is converted to a **component** and the variants are **instances**. Everything you change in
+the template (colours, fonts, positions, extra layers…) is applied to all variants automatically.
+What comes from the Excel file (text, photo) is kept per variant.
 
-Wordt een template groter of kleiner terwijl de plugin open staat, dan worden de varianten automatisch
-opnieuw uitgelijnd. Anders: klik op **Herschik** bij de set.
+When a template is resized while the plugin is open, the variants are realigned automatically.
+Otherwise, click **Rearrange** next to the set.
 
-## Dezelfde Excel opnieuw uploaden
+## Uploading the same Excel file again
 
-De plugin onthoudt per template welke Excel (bestandsnaam of dezelfde kolommen) gebruikt werd, de koppeling en
-welke variant bij welke rij hoort. Upload je dezelfde Excel opnieuw, dan kies je:
-- **Bestaande varianten bijwerken** — rijen worden herkend via de rij-sleutel (kolom `id`, anders de eerste unieke kolom, anders het rijnummer; aanpasbaar bij *Opties*). Nieuwe rijen krijgen een nieuwe variant; optioneel worden varianten van verwijderde rijen gewist.
-- **Nieuwe set maken** — de oude set blijft staan.
+For each template the plugin remembers which Excel file was used (by file name or identical columns), the links,
+and which variant belongs to which row. When you upload the same file again, you choose:
+- **Update existing variants** — rows are matched by a row key (an `id` column, otherwise the shortest unique column,
+  otherwise the row number; adjustable under *Options*). If a key has changed (e.g. you edited the text), the variant on
+  the same Excel row is updated. New rows get a new variant; optionally, variants of removed rows are deleted.
+  Variants that no longer match a row are moved to the end and their name starts with ⚠.
+- **Create a new set** — the old set stays where it is.
 
-## Goed om te weten
+## Good to know
 
-- Ontbrekende lettertypes: lagen met een font dat niet geïnstalleerd is, worden overgeslagen (je krijgt een melding).
-- Afbeeldingen groter dan 4096 px of in WebP/AVIF worden automatisch omgezet voor Figma.
-- Lege cellen: kies bij *Opties* of de template-inhoud blijft, de laag leeg wordt of verborgen wordt.
-- Een template die al een component is, blijft gewoon die component. Een component set zelf kan niet; kies één variant ervan.
+- Missing fonts: layers using a font that isn't installed are skipped (you'll get a warning).
+- Images larger than 4096 px or in WebP/AVIF are converted automatically for Figma.
+- Empty cells: choose under *Options* whether to keep the template content, clear the layer or hide it.
+- Large numbers in Excel's "General" format (shown as `1.11111E+18`) are written out in full.
+- A template that is already a component stays that component. A component set itself can't be used; pick one of its variants.
 
-## Structuur
+## Structure
 
 ```
-manifest.json     Figma plugin manifest (wijst naar dist/)
-src/code.js       Figma-kant: lagen lezen, varianten maken, layout
-src/ui.html       Interface: Excel inlezen, koppelen, afbeeldingen ophalen
-vendor/           SheetJS (Excel) en fflate (afbeeldingen uit .xlsx halen)
-build.js          Bundelt alles tot dist/ui.html + dist/code.js
+manifest.json     Figma plugin manifest (points to dist/)
+src/code.js       Figma side: read layers, create variants, layout
+src/ui.html       Interface: read Excel, link columns, fetch images
+vendor/           SheetJS (Excel) and fflate (extract images from .xlsx)
+build.js          Bundles everything into dist/ui.html + dist/code.js
 ```
 
-## Licentie
+## License
 
-© 2026 Dieter De Weirdt. Je mag de plugin gratis gebruiken, ook commercieel, en de ontwerpen die je ermee maakt vrij inzetten.
-Je mag de plugin ongewijzigd en gratis delen, met vermelding van de auteur en deze repository.
-Verkopen, of een aangepaste versie verspreiden, is niet toegestaan.
-Zie [LICENSE](LICENSE) voor de volledige voorwaarden. Bibliotheken van derden: zie [vendor/LICENSES.md](vendor/LICENSES.md).
+© 2026 Dieter De Weirdt. You may use the plugin for free, including commercially, and freely use the designs you make with it.
+You may share the plugin unmodified and free of charge, crediting the author and this repository.
+Selling it, or distributing a modified version, is not allowed.
+See [LICENSE](LICENSE) for the full terms. Third-party libraries: see [vendor/LICENSES.md](vendor/LICENSES.md).
