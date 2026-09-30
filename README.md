@@ -90,6 +90,7 @@ build.js          Bundelt alles tot dist/ui.html + dist/code.js
 
 ## Licentie
 
-© 2026 Dieter De Weirdt. Je mag de plugin gratis gebruiken en de ontwerpen die je ermee maakt vrij inzetten.
-Verspreiden, delen of verkopen van de plugin (of een aangepaste versie) is niet toegestaan.
+© 2026 Dieter De Weirdt. Je mag de plugin gratis gebruiken, ook commercieel, en de ontwerpen die je ermee maakt vrij inzetten.
+Je mag de plugin ongewijzigd en gratis delen, met vermelding van de auteur en deze repository.
+Verkopen, of een aangepaste versie verspreiden, is niet toegestaan.
 Zie [LICENSE](LICENSE) voor de volledige voorwaarden. Bibliotheken van derden: zie [vendor/LICENSES.md](vendor/LICENSES.md).

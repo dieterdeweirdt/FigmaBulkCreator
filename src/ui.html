@@ -239,6 +239,9 @@
   }
   .pickbar span { flex: 1; }
   .pickbar button { background: rgba(255,255,255,.2); border: 0; color: inherit; border-radius: 5px; padding: 3px 8px; cursor: pointer; }
+  .credit { margin-top: 8px; text-align: center; font-size: 10px; color: var(--text3); }
+  .credit a { color: var(--text2); text-decoration: none; }
+  .credit a:hover { color: var(--brand-text); text-decoration: underline; }
   #resize { position: fixed; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; z-index: 70; color: var(--text3); }
 </style>
 </head>
@@ -339,6 +342,7 @@
   <div class="progress hidden" id="progress"><div></div></div>
   <div class="summary" id="summary"></div>
   <button class="btn primary" id="generate" disabled>Genereer varianten</button>
+  <div class="credit">Bulk Creator door <a href="https://github.com/dieterdeweirdt/FigmaBulkCreator" target="_blank" rel="noopener">Dieter De Weirdt</a></div>
 </footer>
 
 <div id="overlay-root"></div>
