@@ -2,6 +2,11 @@
 
 Create dozens of variants of a design (social posts, stories, banners…) in one click, based on an Excel or CSV file.
 
+![Bulk Creator in Figma: a quote template with nine variants generated from an Excel file](docs/screenshot.webp)
+
+*A quote template (top) and its variants generated from an Excel file with quotes, authors, dates and photos.
+The photo column fills both the avatar and the blurred background; `By {{author}}` is filled in via a placeholder.*
+
 ## Installation (development plugin)
 
 1. Download or clone this repository: `git clone https://github.com/dieterdeweirdt/FigmaBulkCreator.git`
